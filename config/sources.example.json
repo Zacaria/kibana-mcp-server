@@ -1,0 +1,97 @@
+{
+  "sources": [
+    {
+      "id": "consumer",
+      "name": "Consumer cache refresh logs",
+      "description": "Consumer-side execution logs for memoize refresh work.",
+      "tags": ["consumer", "cache-refresh", "staging"],
+      "timeField": "@timestamp",
+      "backend": {
+        "kind": "kibana_internal_search_es",
+        "path": "/internal/search/es",
+        "index": ["consumer-*"]
+      },
+      "schema": {
+        "kind": "kibana_data_views_fields",
+        "index": ["consumer-*"]
+      },
+      "fieldHints": [
+        {
+          "name": "requestId",
+          "aliases": ["request_id", "correlation_id"],
+          "description": "Correlation id for one reload flow."
+        },
+        {
+          "name": "locale",
+          "aliases": ["language"],
+          "description": "Locale used in the reload."
+        },
+        {
+          "name": "productId",
+          "aliases": ["product_id"],
+          "description": "Product identifier involved in the reload."
+        }
+      ],
+      "defaultTextFields": ["message", "event.original"],
+      "evidenceFields": ["requestId", "locale", "productId", "layer", "duration_ms"]
+    },
+    {
+      "id": "api",
+      "name": "API request logs",
+      "description": "Application-side API logs for before/after validation windows.",
+      "tags": ["api", "latency", "staging"],
+      "timeField": "@timestamp",
+      "backend": {
+        "kind": "kibana_internal_search_es",
+        "path": "/internal/search/es",
+        "index": ["api-*"]
+      },
+      "schema": {
+        "kind": "kibana_data_views_fields",
+        "index": ["api-*"]
+      },
+      "fieldHints": [
+        {
+          "name": "route",
+          "description": "Normalized route or path pattern."
+        },
+        {
+          "name": "statusCode",
+          "aliases": ["status_code"],
+          "description": "HTTP response code."
+        }
+      ],
+      "defaultTextFields": ["message"],
+      "evidenceFields": ["route", "statusCode", "duration_ms"]
+    },
+    {
+      "id": "reload-metrics",
+      "name": "Reload metrics-style log events",
+      "description": "Structured log events such as MEMOIZE_TREE_RELOAD_STATS and PRODUCT_OPENING_DATES_REFRESH_PHASES.",
+      "tags": ["metrics", "reload", "staging"],
+      "timeField": "@timestamp",
+      "backend": {
+        "kind": "kibana_internal_search_es",
+        "path": "/internal/search/es",
+        "index": ["consumer-*"]
+      },
+      "schema": {
+        "kind": "kibana_data_views_fields",
+        "index": ["consumer-*"]
+      },
+      "fieldHints": [
+        {
+          "name": "eventName",
+          "aliases": ["event_name"],
+          "description": "Logical event marker for metrics-style logs."
+        },
+        {
+          "name": "layer",
+          "description": "Memoize layer name."
+        }
+      ],
+      "defaultTextFields": ["message", "eventName"],
+      "evidenceFields": ["eventName", "layer", "keys_scanned", "keys_reloaded", "duration_ms"]
+    }
+  ]
+}
