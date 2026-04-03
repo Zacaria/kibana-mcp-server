@@ -23,6 +23,7 @@ export const describeFieldsOutputSchema = z.object({
       aggregatable: z.boolean().optional(),
       subfields: z.array(z.string()),
       nested_path: z.string().optional(),
+      object_array_path: z.string().optional(),
       multi_field_parent: z.string().optional(),
       preferred_exact_field: z.string().optional()
     })
@@ -55,6 +56,7 @@ export function formatDescribeFieldsResult(
         field.type,
         field.searchable === true ? "searchable" : undefined,
         field.aggregatable === true ? "aggregatable" : undefined,
+        field.object_array_path ? `object_array=${field.object_array_path}` : undefined,
         field.preferred_exact_field ? `exact=${field.preferred_exact_field}` : undefined
       ].filter(Boolean);
 

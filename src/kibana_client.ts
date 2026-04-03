@@ -217,17 +217,28 @@ function upsertFieldDescriptor(
     searchable: existing.searchable ?? field.searchable,
     aggregatable: existing.aggregatable ?? field.aggregatable,
     nested_path: existing.nested_path ?? field.nested_path,
+    object_array_path: existing.object_array_path ?? field.object_array_path,
     multi_field_parent: existing.multi_field_parent ?? field.multi_field_parent,
     preferred_exact_field: existing.preferred_exact_field ?? field.preferred_exact_field,
     subfields: [...new Set([...(existing.subfields ?? []), ...(field.subfields ?? [])])]
   });
 }
 
+function normalizeInferredNestedPath(
+  nestedPath: string | undefined,
+  objectArrayPath: string | undefined
+): string | undefined {
+  // Sampled hits cannot prove Elasticsearch nested mappings. Once a field is inferred under an
+  // array-of-objects path, keep that shape explicit and never mark it as nested.
+  return objectArrayPath ? undefined : nestedPath;
+}
+
 function collectFieldsFromSourceDocument(
   value: unknown,
   fieldMap: Map<string, SourceFieldDescriptor>,
   path?: string,
-  nestedPath?: string
+  nestedPath?: string,
+  objectArrayPath?: string
 ): void {
   if (value === null || value === undefined) {
     return;
@@ -242,7 +253,13 @@ function collectFieldsFromSourceDocument(
     if (path && objectValues.length > 0) {
       for (const entry of objectValues) {
         for (const [key, childValue] of Object.entries(entry)) {
-          collectFieldsFromSourceDocument(childValue, fieldMap, `${path}.${key}`, path);
+          collectFieldsFromSourceDocument(
+            childValue,
+            fieldMap,
+            `${path}.${key}`,
+            undefined,
+            path
+          );
         }
       }
       return;
@@ -257,7 +274,8 @@ function collectFieldsFromSourceDocument(
         type: inferPrimitiveFieldType(primitiveSample, path),
         searchable: true,
         aggregatable: typeof primitiveSample === "string" ? false : true,
-        nested_path: nestedPath,
+        nested_path: normalizeInferredNestedPath(nestedPath, objectArrayPath),
+        object_array_path: objectArrayPath,
         subfields: []
       });
     }
@@ -267,7 +285,13 @@ function collectFieldsFromSourceDocument(
   if (typeof value === "object") {
     for (const [key, childValue] of Object.entries(value as Record<string, unknown>)) {
       const childPath = path ? `${path}.${key}` : key;
-      collectFieldsFromSourceDocument(childValue, fieldMap, childPath, nestedPath);
+      collectFieldsFromSourceDocument(
+        childValue,
+        fieldMap,
+        childPath,
+        nestedPath,
+        objectArrayPath
+      );
     }
     return;
   }
@@ -281,7 +305,8 @@ function collectFieldsFromSourceDocument(
     type: inferPrimitiveFieldType(value, path),
     searchable: true,
     aggregatable: typeof value === "string" ? false : true,
-    nested_path: nestedPath,
+    nested_path: normalizeInferredNestedPath(nestedPath, objectArrayPath),
+    object_array_path: objectArrayPath,
     subfields: []
   });
 }

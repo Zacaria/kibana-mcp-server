@@ -8,7 +8,7 @@ focus: mcp server for agent log search in basic-auth-protected Kibana, re-ground
 
 ## Codebase Context
 
-The current repo is intentionally minimal and currently contains only `handoff.md` plus documentation artifacts. There is no existing implementation to constrain architecture, so the main grounding sources are the local handoff and the adjacent staging-validation protocol at `../digital-api/STAGING_TEST_PROTOCOL.md`.
+The current repo is intentionally minimal and currently contains only `docs/sources/handoff.md` plus documentation artifacts. There is no existing implementation to constrain architecture, so the main grounding sources are the local handoff and the adjacent staging-validation protocol at `../digital-api/STAGING_TEST_PROTOCOL.md`.
 
 One repo-level note: `AGENTS.md` references `RTK.md`, but no such file exists in this workspace. The practical grounding sources for this ideation are therefore the handoff and the staging protocol, not any missing repo convention document.
 

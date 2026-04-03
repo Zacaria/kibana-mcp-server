@@ -211,8 +211,13 @@ describe("KibanaClient", () => {
       "event.keyword"
     );
     expect(result.find((field) => field.name === "slowest_layers.layer")?.nested_path).toBe(
-      "slowest_layers"
+      undefined
     );
+    expect(
+      result.find((field) => field.name === "slowest_layers.layer")?.object_array_path
+    ).toBe("slowest_layers");
+    expect(result.find((field) => field.name === "slowest_layers.duration_ms")?.object_array_path)
+      .toBe("slowest_layers");
   });
 
   it("fails clearly when schema backend configuration is missing", async () => {

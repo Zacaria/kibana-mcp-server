@@ -3,14 +3,14 @@ title: feat: Add schema-aware investigation features to Kibana MCP
 type: feat
 status: active
 date: 2026-04-03
-origin: features-v1.md
+origin: docs/sources/features-v1.md
 ---
 
 # feat: Add schema-aware investigation features to Kibana MCP
 
 ## Overview
 
-Evolve the existing Kibana MCP from a source-catalog search tool into a schema-aware investigation tool that can answer the remaining log-analysis needs in `features-v1.md` without forcing agents back to direct Elasticsearch calls or manual Kibana inspection.
+Evolve the existing Kibana MCP from a source-catalog search tool into a schema-aware investigation tool that can answer the remaining log-analysis needs in `docs/sources/features-v1.md` without forcing agents back to direct Elasticsearch calls or manual Kibana inspection.
 
 This is a second-phase plan. The repo already ships `configure`, `discover`, `filter`, and `query`, along with runtime source-catalog persistence and arbitrary hit sorting. The work here is to close the remaining capability gaps while keeping the MCP general and the public surface intentionally small.
 
@@ -32,7 +32,7 @@ It still cannot reliably answer investigation questions that depend on:
 - computing numeric summary stats and percentiles
 - retrieving “top N per bucket” evidence instead of only global top hits
 
-Those gaps are exactly what drove the fallback described in `features-v1.md`.
+Those gaps are exactly what drove the fallback described in `docs/sources/features-v1.md`.
 
 ## Requirements Trace
 
@@ -331,7 +331,7 @@ The architectural change is the introduction of schema awareness as a reusable l
 
 - [ ] **Unit 6: Close the feature-document deltas in docs and compatibility tests**
 
-**Goal:** Finish the tranche by explicitly documenting what from `features-v1.md` is implemented, what is intentionally not a separate tool, and why.
+**Goal:** Finish the tranche by explicitly documenting what from `docs/sources/features-v1.md` is implemented, what is intentionally not a separate tool, and why.
 
 **Requirements:** F8, F9
 
@@ -339,7 +339,7 @@ The architectural change is the introduction of schema awareness as a reusable l
 
 **Files:**
 - Modify: `README.md`
-- Modify: `features-v1.md`
+- Modify: `docs/sources/features-v1.md`
 - Modify: `test/server.test.ts`
 - Optionally create: `docs/solutions/feature-shapes/schema-aware-querying-2026-04-03.md`
 

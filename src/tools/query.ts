@@ -124,7 +124,8 @@ export const queryOutputSchema = z.object({
           path: z.string(),
           field: z.string(),
           value: z.union([z.string(), z.number(), z.boolean()]),
-          resolved_field: z.string()
+          resolved_field: z.string(),
+          query_strategy: z.enum(["nested", "flat_object_path"]).optional()
         })
       )
       .optional(),
@@ -143,7 +144,11 @@ export const queryOutputSchema = z.object({
     advisories: z
       .array(
         z.object({
-          kind: z.enum(["preferred_exact_field", "schema_unavailable"]),
+          kind: z.enum([
+            "preferred_exact_field",
+            "schema_unavailable",
+            "non_nested_object_array"
+          ]),
           source_id: z.string(),
           purpose: z.enum(["filter", "sort", "group_by"]),
           requested_field: z.string(),

@@ -24,6 +24,7 @@ export interface SourceFieldDescriptor {
   aggregatable?: boolean;
   subfields: string[];
   nested_path?: string;
+  object_array_path?: string;
   multi_field_parent?: string;
   preferred_exact_field?: string;
 }
@@ -111,10 +112,14 @@ export interface ResolvedQueryFilter extends QueryFilter {
 
 export interface ResolvedNestedQueryFilter extends NestedQueryFilter {
   resolved_field: string;
+  query_strategy?: "nested" | "flat_object_path";
 }
 
 export interface FieldResolutionAdvisory {
-  kind: "preferred_exact_field" | "schema_unavailable";
+  kind:
+    | "preferred_exact_field"
+    | "schema_unavailable"
+    | "non_nested_object_array";
   source_id: string;
   purpose: "filter" | "sort" | "group_by";
   requested_field: string;

@@ -104,6 +104,7 @@ export class SchemaCatalog {
             field.type ?? "",
             field.description ?? "",
             field.nested_path ?? "",
+            field.object_array_path ?? "",
             field.multi_field_parent ?? "",
             field.preferred_exact_field ?? "",
             ...(field.aliases ?? []),

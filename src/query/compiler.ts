@@ -140,10 +140,81 @@ function resolveNestedFieldName(
   return resolveFieldName(source, requestedField, "filter", options);
 }
 
+function getNestedChildFields(
+  sourceSchema: SourceFieldDescriptor[],
+  nestedPath: string
+): string[] {
+  return sourceSchema
+    .map((field) => field.name)
+    .filter((fieldName) => fieldName.startsWith(`${nestedPath}.`))
+    .sort((left, right) => left.localeCompare(right));
+}
+
+function formatFieldList(fields: string[], limit = 3): string {
+  if (fields.length <= limit) {
+    return fields.join(", ");
+  }
+
+  return `${fields.slice(0, limit).join(", ")} (+${fields.length - limit} more)`;
+}
+
+function isFieldWithinPath(fieldName: string, path: string): boolean {
+  return fieldName === path || fieldName.startsWith(`${path}.`);
+}
+
+function describeNonNestedPathKind(
+  sourceSchema: SourceFieldDescriptor[],
+  path: string
+): "object_array" | "object_like" | null {
+  const fieldsWithinPath = sourceSchema.filter((field) => isFieldWithinPath(field.name, path));
+
+  if (fieldsWithinPath.length === 0) {
+    return null;
+  }
+
+  if (fieldsWithinPath.some((field) => field.object_array_path === path)) {
+    return "object_array";
+  }
+
+  return "object_like";
+}
+
+function supportsFlatObjectPathTermFallback(
+  descriptor: SourceFieldDescriptor | undefined,
+  resolvedField: string
+): boolean {
+  if (!descriptor) {
+    return false;
+  }
+
+  if (descriptor.type === "text" && !resolvedField.endsWith(".keyword")) {
+    return false;
+  }
+
+  return true;
+}
+
+function buildNonNestedPathError(
+  source: SourceDefinition,
+  path: string,
+  pathKind: "object_array" | "object_like",
+  reason: string
+): Error {
+  const pathDescription =
+    pathKind === "object_array"
+      ? "an inferred array of objects"
+      : "a non-nested object path with child fields";
+
+  return new Error(
+    `Path '${path}' for source '${source.id}' is ${pathDescription}, not a true nested mapping. ${reason}`
+  );
+}
+
 function compileNestedFilters(
   source: SourceDefinition,
   nestedFilters: NestedQueryFilter[],
-  options: CompileQueryOptions
+  options: CompileQueryOptions,
+  request: Pick<QueryRequest, "extract_nested">
 ): {
   resolvedNestedFilters: ResolvedNestedQueryFilter[];
   advisories: FieldResolutionAdvisory[];
@@ -165,38 +236,97 @@ function compileNestedFilters(
     );
   }
 
+  const filtersByPath = new Map<string, NestedQueryFilter[]>();
   for (const nestedFilter of nestedFilters) {
-    const nestedPathExists = sourceSchema.some(
-      (field) => field.nested_path === nestedFilter.path
-    );
+    const filters = filtersByPath.get(nestedFilter.path) ?? [];
+    filters.push(nestedFilter);
+    filtersByPath.set(nestedFilter.path, filters);
+  }
 
-    if (!nestedPathExists) {
+  for (const [path, pathFilters] of filtersByPath.entries()) {
+    const nestedPathExists = sourceSchema.some((field) => field.nested_path === path);
+    const nonNestedPathKind = nestedPathExists
+      ? null
+      : describeNonNestedPathKind(sourceSchema, path);
+
+    if (!nestedPathExists && !nonNestedPathKind) {
       throw new Error(
-        `Nested path '${nestedFilter.path}' is not known as nested for source '${source.id}'`
+        `Nested path '${path}' is not known as nested for source '${source.id}'`
       );
     }
 
-    const requestedField = nestedFilter.field.startsWith(`${nestedFilter.path}.`)
-      ? nestedFilter.field
-      : `${nestedFilter.path}.${nestedFilter.field}`;
-    const nestedFieldExists = sourceSchema.some(
-      (field) =>
-        field.name === requestedField || field.name.startsWith(`${requestedField}.`)
-    );
-
-    if (!nestedFieldExists) {
-      throw new Error(
-        `Nested field '${nestedFilter.field}' was not found under path '${nestedFilter.path}' for source '${source.id}'`
+    if (!nestedPathExists && request.extract_nested) {
+      throw buildNonNestedPathError(
+        source,
+        path,
+        nonNestedPathKind ?? "object_like",
+        "inner_hits are only available for fields mapped as nested, so extract_nested cannot be used here."
       );
     }
 
-    const { resolvedField, advisory } = resolveNestedFieldName(source, nestedFilter, options);
-    resolvedNestedFilters.push({
-      ...nestedFilter,
-      resolved_field: resolvedField
-    });
-    if (advisory) {
-      advisories.push(advisory);
+    if (!nestedPathExists && pathFilters.length > 1) {
+      throw buildNonNestedPathError(
+        source,
+        path,
+        nonNestedPathKind ?? "object_like",
+        "Multiple nested_filters on the same path are unsafe because Elasticsearch flattens non-nested object values and may match conditions across different objects. Remap the path as nested if you need same-object matching."
+      );
+    }
+
+    for (const nestedFilter of pathFilters) {
+      const requestedField = nestedFilter.field.startsWith(`${path}.`)
+        ? nestedFilter.field
+        : `${path}.${nestedFilter.field}`;
+      const nestedFieldExists = sourceSchema.some((field) =>
+        isFieldWithinPath(field.name, requestedField)
+      );
+
+      if (!nestedFieldExists) {
+        throw new Error(
+          `Nested field '${nestedFilter.field}' was not found under path '${path}' for source '${source.id}'`
+        );
+      }
+
+      const { resolvedField, advisory } = resolveNestedFieldName(source, nestedFilter, options);
+
+      if (!nestedPathExists) {
+        const resolvedDescriptor = findFieldDescriptor(sourceSchema, resolvedField);
+        if (!supportsFlatObjectPathTermFallback(resolvedDescriptor, resolvedField)) {
+          throw buildNonNestedPathError(
+            source,
+            path,
+            nonNestedPathKind ?? "object_like",
+            `Field '${resolvedField}' does not resolve to an exact-match field, so a plain term-query fallback would not be predictable. Use a keyword/exact field or remap the path as nested.`
+          );
+        }
+
+        advisories.push({
+          kind: "non_nested_object_array",
+          source_id: source.id,
+          purpose: "filter",
+          requested_field: requestedField,
+          resolved_field: resolvedField,
+          reason:
+            `Nested path '${path}' is represented by child fields (${formatFieldList(
+              getNestedChildFields(sourceSchema, path)
+            )}) but is not mapped as nested for source '${source.id}'. ` +
+            `Applied a flat term filter on '${resolvedField}' instead of a nested query. ` +
+            `This can match any object in the array and cannot return inner_hits${
+              request.extract_nested
+                ? "; requested extract_nested could not be honored without nested mapping"
+                : ""
+            }.`
+        });
+      }
+
+      resolvedNestedFilters.push({
+        ...nestedFilter,
+        resolved_field: resolvedField,
+        query_strategy: nestedPathExists ? "nested" : "flat_object_path"
+      });
+      if (advisory) {
+        advisories.push(advisory);
+      }
     }
   }
 
@@ -250,6 +380,15 @@ function buildElasticBody(
   if (resolvedNestedFilters.length > 0) {
     const filtersByPath = new Map<string, ResolvedNestedQueryFilter[]>();
     for (const nestedFilter of resolvedNestedFilters) {
+      if (nestedFilter.query_strategy === "flat_object_path") {
+        must.push({
+          term: {
+            [nestedFilter.resolved_field]: nestedFilter.value
+          }
+        });
+        continue;
+      }
+
       const filters = filtersByPath.get(nestedFilter.path) ?? [];
       filters.push(nestedFilter);
       filtersByPath.set(nestedFilter.path, filters);
@@ -425,7 +564,9 @@ function compileSourceQuery(
   options: CompileQueryOptions
 ): CompiledSourceQuery {
   const { resolvedFilters, advisories } = compileFilters(source, request.filters ?? [], options);
-  const nestedCompilation = compileNestedFilters(source, request.nested_filters ?? [], options);
+  const nestedCompilation = compileNestedFilters(source, request.nested_filters ?? [], options, {
+    extract_nested: request.extract_nested
+  });
   advisories.push(...nestedCompilation.advisories);
   const sortResolution = resolveFieldName(
     source,

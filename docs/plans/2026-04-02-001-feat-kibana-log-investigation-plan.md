@@ -34,7 +34,7 @@ The target user is another agent performing investigation work. The immediate us
 
 ### Relevant Code and Patterns
 
-- The current repo has no implementation code yet, only `handoff.md` and documentation artifacts, so there are no local code patterns to preserve.
+- The current repo has no implementation code yet, only `docs/sources/handoff.md` and documentation artifacts, so there are no local code patterns to preserve.
 - The adjacent repo at `../digital-api/package.json` and `../digital-api/tsconfig.json` shows a TypeScript and Node.js ecosystem. Aligning this MCP with that stack lowers setup and maintenance friction without coupling the codebases.
 - The staging workflow described in `../digital-api/STAGING_TEST_PROTOCOL.md` is the main behavioral reference for what “useful investigation” means in practice.
 
