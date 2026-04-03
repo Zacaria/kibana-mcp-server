@@ -2,7 +2,7 @@
 
 ## Goal
 
-Close the remaining gaps that prevented the Kibana MCP from fully covering the log-analysis workflow in `STAGING_TEST_PROTOCOL.md` without falling back to direct Elasticsearch calls or manual inspection.
+Close the remaining gaps that prevented the Kibana MCP from fully covering a realistic log-investigation workflow without falling back to direct Elasticsearch calls or manual Kibana inspection.
 
 ## Additions
 
@@ -41,8 +41,8 @@ Options:
 
 Why this is needed:
 
-- `event = PRODUCT_OPENING_DATES_REFRESH_PHASES` returned `0` hits
-- `event.keyword = PRODUCT_OPENING_DATES_REFRESH_PHASES` returned the expected results
+- `event = CACHE_REFRESH_PHASES` returned `0` hits
+- `event.keyword = CACHE_REFRESH_PHASES` returned the expected results
 
 ### 3. Nested Array Querying
 
@@ -50,16 +50,16 @@ Support filtering inside nested arrays in structured log documents.
 
 Proposed capability:
 
-- nested filter support for fields such as `slowest_layers.layer`
+- nested filter support for fields such as `steps.name`
 
 Example use cases:
 
-- find `MEMOIZE_TREE_RELOAD_STATS` where `slowest_layers.layer = MEMOIZE_V3:PRODUCT_OPENING_DATES_V3`
-- find reload stats where a nested layer has `keys_scanned = 0`
+- find `WORKFLOW_RELOAD_STATS` where `steps.name = CACHE_REFRESH`
+- find workflow stats where a nested step has `items_scanned = 0`
 
 Why this is needed:
 
-- critical protocol checks rely on inspecting specific layers inside `slowest_layers[]`
+- critical investigation checks rely on inspecting specific steps inside `steps[]`
 - current MCP only returns the whole parent document
 
 ### 4. Nested Projection / Extraction
@@ -72,18 +72,18 @@ Proposed capability:
 
 Example output:
 
-- parent identifiers: `@timestamp`, `request_id`, `product_id`
+- parent identifiers: `@timestamp`, `trace_id`, `job_id`
 - matching nested object:
-  - `layer`
+  - `name`
   - `duration_ms`
-  - `keys_scanned`
-  - `keys_reloaded`
-  - `keys_changed`
+  - `items_scanned`
+  - `items_reloaded`
+  - `items_changed`
 
 Why this is needed:
 
 - the current raw hit is too bulky for precise layer-level analysis
-- protocol steps need compact evidence for one layer at a time
+- investigation steps need compact evidence for one object at a time
 
 ### 5. Cursor-Based Pagination
 
@@ -97,7 +97,7 @@ Proposed capability:
 Why this is needed:
 
 - some correlated flows produce tens of thousands of hits
-- one `request_id` returned more than `80,000` documents
+- one `trace_id` returned more than `80,000` documents
 - the current MCP only exposes the first `limit` hits
 
 ### 6. Numeric Stats Aggregations
@@ -122,8 +122,8 @@ Expected metrics:
 
 Example use cases:
 
-- summarize `total_duration_ms` for `MEMOIZE_TREE_RELOAD_STATS`
-- compare `duration_ms` by locale or by request id
+- summarize `total_duration_ms` for `WORKFLOW_RELOAD_STATS`
+- compare `duration_ms` by region or by trace id
 
 Why this is needed:
 
@@ -139,9 +139,9 @@ Proposed capability:
 
 Example use cases:
 
-- top `MEMOIZE_TREE_RELOAD_STATS` by `total_duration_ms` per `request_id`
-- latest `PRODUCT_OPENING_DATES_REFRESH_PHASES` per `product_id`
-- highest `total_duration_ms` per `locale`
+- top `WORKFLOW_RELOAD_STATS` by `total_duration_ms` per `trace_id`
+- latest `CACHE_REFRESH_PHASES` per `job_id`
+- highest `total_duration_ms` per `region`
 
 Why this is needed:
 
@@ -155,18 +155,18 @@ Proposed capability:
 
 - merged, chronologically sorted timeline over a source and a time window
 - filterable by combinations of:
-  - `request_id`
+  - `trace_id`
   - `task_id`
-  - `product_id`
-  - `locale`
-  - `root_key`
+  - `job_id`
+  - `region`
+  - `service`
   - `event`
 
 Why this is needed:
 
-- `request_id` alone is not always a single-run correlation key
-- staging analysis often requires `request_id + timestamp window + product_id/locale/root_key`
-- the protocol explicitly asks for correlated reload inspection
+- `trace_id` alone is not always a single-run correlation key
+- investigation work often requires `trace_id + timestamp window + job_id/region/service`
+- correlated workflow inspection is a common operator need
 
 ### 9. Config Bootstrap From Environment
 

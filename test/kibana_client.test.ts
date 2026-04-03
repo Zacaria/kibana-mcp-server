@@ -4,19 +4,19 @@ import { KibanaClient } from "../src/kibana_client.js";
 import type { AppConfig, CompiledSourceQuery, SourceDefinition } from "../src/types.js";
 
 const source: SourceDefinition = {
-  id: "consumer",
-  name: "Consumer",
-  tags: ["consumer"],
+  id: "app-logs",
+  name: "Application logs",
+  tags: ["application"],
   timeField: "@timestamp",
   backend: {
     kind: "kibana_internal_search_es",
     path: "/internal/search/es",
-    index: "consumer-*"
+    index: "app-logs-*"
   },
   schema: {
     kind: "kibana_data_views_fields",
     path: "/api/data_views/fields_for_wildcard",
-    index: "consumer-*"
+    index: "app-logs-*"
   },
   fieldHints: [],
   defaultTextFields: ["message"],
@@ -66,7 +66,7 @@ describe("KibanaClient", () => {
 
     const result = await client.execute(compiledQuery);
 
-    expect(result.source.id).toBe("consumer");
+    expect(result.source.id).toBe("app-logs");
     expect(fetchSpy).toHaveBeenCalledWith(
       "https://kibana.example.com/internal/search/es",
       expect.objectContaining({
@@ -145,7 +145,7 @@ describe("KibanaClient", () => {
     expect(calledUrl.origin + calledUrl.pathname).toBe(
       "https://kibana.example.com/api/data_views/fields_for_wildcard"
     );
-    expect(calledUrl.searchParams.get("pattern")).toBe("consumer-*");
+    expect(calledUrl.searchParams.get("pattern")).toBe("app-logs-*");
     expect(calledUrl.searchParams.get("allow_no_index")).toBe("true");
     expect(calledUrl.searchParams.getAll("meta_fields")).toEqual([
       "_source",
@@ -179,16 +179,16 @@ describe("KibanaClient", () => {
                 hits: [
                   {
                     _source: {
-                      event: "PRODUCT_OPENING_DATES_REFRESH_PHASES",
-                      slowest_layers: [
+                      event: "CACHE_REFRESH_PHASES",
+                      steps: [
                         {
-                          layer: "MEMOIZE_V3:PRODUCT_OPENING_DATES_V3",
+                          name: "CACHE_REFRESH",
                           duration_ms: 42
                         }
                       ]
                     },
                     fields: {
-                      "event.keyword": ["PRODUCT_OPENING_DATES_REFRESH_PHASES"],
+                      "event.keyword": ["CACHE_REFRESH_PHASES"],
                       "@timestamp": ["2026-04-03T10:00:00.000Z"]
                     }
                   }
@@ -210,14 +210,13 @@ describe("KibanaClient", () => {
     expect(result.find((field) => field.name === "event")?.preferred_exact_field).toBe(
       "event.keyword"
     );
-    expect(result.find((field) => field.name === "slowest_layers.layer")?.nested_path).toBe(
+    expect(result.find((field) => field.name === "steps.name")?.nested_path).toBe(
       undefined
     );
-    expect(
-      result.find((field) => field.name === "slowest_layers.layer")?.object_array_path
-    ).toBe("slowest_layers");
-    expect(result.find((field) => field.name === "slowest_layers.duration_ms")?.object_array_path)
-      .toBe("slowest_layers");
+    expect(result.find((field) => field.name === "steps.name")?.object_array_path).toBe("steps");
+    expect(result.find((field) => field.name === "steps.duration_ms")?.object_array_path).toBe(
+      "steps"
+    );
   });
 
   it("fails clearly when schema backend configuration is missing", async () => {

@@ -4,66 +4,66 @@ import { compileQueryPlan } from "../src/query/compiler.js";
 import type { SourceDefinition, SourceFieldDescriptor } from "../src/types.js";
 
 const source: SourceDefinition = {
-  id: "reload-metrics",
-  name: "Reload metrics",
+  id: "workflow-metrics",
+  name: "Workflow metrics",
   tags: ["metrics"],
   timeField: "@timestamp",
   backend: {
     kind: "kibana_internal_search_es",
     path: "/internal/search/es",
-    index: "consumer-*"
+    index: "workflow-*"
   },
   fieldHints: [],
   defaultTextFields: ["message"],
-  evidenceFields: ["request_id", "product_id"]
+  evidenceFields: ["trace_id", "job_id"]
 };
 
 const sourceSchema: SourceFieldDescriptor[] = [
   {
-    name: "slowest_layers.layer",
+    name: "steps.name",
     type: "text",
     searchable: true,
     aggregatable: false,
-    nested_path: "slowest_layers",
-    subfields: ["slowest_layers.layer.keyword"],
-    preferred_exact_field: "slowest_layers.layer.keyword"
+    nested_path: "steps",
+    subfields: ["steps.name.keyword"],
+    preferred_exact_field: "steps.name.keyword"
   },
   {
-    name: "slowest_layers.layer.keyword",
+    name: "steps.name.keyword",
     type: "keyword",
     searchable: true,
     aggregatable: true,
-    multi_field_parent: "slowest_layers.layer",
-    nested_path: "slowest_layers",
+    multi_field_parent: "steps.name",
+    nested_path: "steps",
     subfields: []
   }
 ];
 
 const objectArraySchema: SourceFieldDescriptor[] = [
   {
-    name: "slowest_layers.layer",
+    name: "steps.name",
     type: "text",
     searchable: true,
     aggregatable: false,
-    object_array_path: "slowest_layers",
-    subfields: ["slowest_layers.layer.keyword"],
-    preferred_exact_field: "slowest_layers.layer.keyword"
+    object_array_path: "steps",
+    subfields: ["steps.name.keyword"],
+    preferred_exact_field: "steps.name.keyword"
   },
   {
-    name: "slowest_layers.layer.keyword",
+    name: "steps.name.keyword",
     type: "keyword",
     searchable: true,
     aggregatable: true,
-    multi_field_parent: "slowest_layers.layer",
-    object_array_path: "slowest_layers",
+    multi_field_parent: "steps.name",
+    object_array_path: "steps",
     subfields: []
   },
   {
-    name: "slowest_layers.duration_ms",
+    name: "steps.duration_ms",
     type: "long",
     searchable: true,
     aggregatable: true,
-    object_array_path: "slowest_layers",
+    object_array_path: "steps",
     subfields: []
   }
 ];
@@ -72,15 +72,15 @@ describe("compileQueryPlan nested filters", () => {
   it("compiles nested filters into a nested query with inner hits", () => {
     const plan = compileQueryPlan(
       {
-        source_ids: ["reload-metrics"],
+        source_ids: ["workflow-metrics"],
         start_time: "2026-04-02T12:00:00Z",
         end_time: "2026-04-02T12:05:00Z",
         mode: "hits",
         nested_filters: [
           {
-            path: "slowest_layers",
-            field: "layer",
-            value: "MEMOIZE_V3:PRODUCT_OPENING_DATES_V3"
+            path: "steps",
+            field: "name",
+            value: "CACHE_REFRESH"
           }
         ],
         extract_nested: true,
@@ -88,14 +88,14 @@ describe("compileQueryPlan nested filters", () => {
       },
       [source],
       {
-        sourceSchemas: new Map([["reload-metrics", sourceSchema]])
+        sourceSchemas: new Map([["workflow-metrics", sourceSchema]])
       }
     );
 
     expect(plan.sourceQueries[0]?.resolvedNestedFilters[0]).toMatchObject({
-      path: "slowest_layers",
-      field: "layer",
-      resolved_field: "slowest_layers.layer.keyword"
+      path: "steps",
+      field: "name",
+      resolved_field: "steps.name.keyword"
     });
     expect(plan.sourceQueries[0]?.request.body).toMatchObject({
       query: {
@@ -104,21 +104,20 @@ describe("compileQueryPlan nested filters", () => {
             {},
             {
               nested: {
-                path: "slowest_layers",
+                path: "steps",
                 query: {
                   bool: {
                     must: [
                       {
                         term: {
-                          "slowest_layers.layer.keyword":
-                            "MEMOIZE_V3:PRODUCT_OPENING_DATES_V3"
+                          "steps.name.keyword": "CACHE_REFRESH"
                         }
                       }
                     ]
                   }
                 },
                 inner_hits: {
-                  name: "slowest_layers"
+                  name: "steps"
                 }
               }
             }
@@ -132,15 +131,15 @@ describe("compileQueryPlan nested filters", () => {
     expect(() =>
       compileQueryPlan(
         {
-          source_ids: ["reload-metrics"],
+          source_ids: ["workflow-metrics"],
           start_time: "2026-04-02T12:00:00Z",
           end_time: "2026-04-02T12:05:00Z",
           mode: "hits",
           nested_filters: [
             {
-              path: "slowest_layers",
-              field: "layer",
-              value: "MEMOIZE_V3:PRODUCT_OPENING_DATES_V3"
+              path: "steps",
+              field: "name",
+              value: "CACHE_REFRESH"
             }
           ],
           extract_nested: true,
@@ -157,15 +156,15 @@ describe("compileQueryPlan nested filters", () => {
   it("falls back to flat filtering for object arrays that are not nested", () => {
     const plan = compileQueryPlan(
       {
-        source_ids: ["reload-metrics"],
+        source_ids: ["workflow-metrics"],
         start_time: "2026-04-02T12:00:00Z",
         end_time: "2026-04-02T12:05:00Z",
         mode: "hits",
         nested_filters: [
           {
-            path: "slowest_layers",
-            field: "layer",
-            value: "MEMOIZE_V3:PRODUCT_OPENING_DATES_V3"
+            path: "steps",
+            field: "name",
+            value: "CACHE_REFRESH"
           }
         ],
         extract_nested: false,
@@ -173,14 +172,14 @@ describe("compileQueryPlan nested filters", () => {
       },
       [source],
       {
-        sourceSchemas: new Map([["reload-metrics", objectArraySchema]])
+        sourceSchemas: new Map([["workflow-metrics", objectArraySchema]])
       }
     );
 
     expect(plan.sourceQueries[0]?.resolvedNestedFilters[0]).toMatchObject({
-      path: "slowest_layers",
-      field: "layer",
-      resolved_field: "slowest_layers.layer.keyword",
+      path: "steps",
+      field: "name",
+      resolved_field: "steps.name.keyword",
       query_strategy: "flat_object_path"
     });
     expect(plan.sourceQueries[0]?.advisories.map((advisory) => advisory.kind)).toContain(
@@ -193,8 +192,7 @@ describe("compileQueryPlan nested filters", () => {
             {},
             {
               term: {
-                "slowest_layers.layer.keyword":
-                  "MEMOIZE_V3:PRODUCT_OPENING_DATES_V3"
+                "steps.name.keyword": "CACHE_REFRESH"
               }
             }
           ]
@@ -207,18 +205,18 @@ describe("compileQueryPlan nested filters", () => {
     expect(() =>
       compileQueryPlan(
         {
-          source_ids: ["reload-metrics"],
+          source_ids: ["workflow-metrics"],
           start_time: "2026-04-02T12:00:00Z",
           end_time: "2026-04-02T12:05:00Z",
           mode: "hits",
           nested_filters: [
             {
-              path: "slowest_layers",
-              field: "layer",
-              value: "MEMOIZE_V3:PRODUCT_OPENING_DATES_V3"
+              path: "steps",
+              field: "name",
+              value: "CACHE_REFRESH"
             },
             {
-              path: "slowest_layers",
+              path: "steps",
               field: "duration_ms",
               value: 42
             }
@@ -228,7 +226,7 @@ describe("compileQueryPlan nested filters", () => {
         },
         [source],
         {
-          sourceSchemas: new Map([["reload-metrics", objectArraySchema]])
+          sourceSchemas: new Map([["workflow-metrics", objectArraySchema]])
         }
       )
     ).toThrow(/array of objects.*multiple nested_filters/i);

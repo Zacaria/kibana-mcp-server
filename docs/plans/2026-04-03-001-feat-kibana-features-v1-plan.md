@@ -27,7 +27,7 @@ The current MCP can already:
 It still cannot reliably answer investigation questions that depend on:
 
 - knowing whether `event` or `event.keyword` is the safe exact-match field
-- inspecting nested array content such as `slowest_layers[]`
+- inspecting nested array content such as `steps[]`
 - paging through very large hit sets
 - computing numeric summary stats and percentiles
 - retrieving “top N per bucket” evidence instead of only global top hits
@@ -47,8 +47,8 @@ Those gaps are exactly what drove the fallback described in `docs/sources/featur
 
 ## Scope Boundaries
 
-- No protocol-specific tool for `STAGING_TEST_PROTOCOL.md`.
-- No Redis inspection, trigger execution, or staging API orchestration.
+- No workflow-specific helper tool.
+- No Redis inspection, trigger execution, or external API orchestration.
 - No write access to Kibana, Elasticsearch, or data views.
 - No silent rewriting of exact field names passed to `filter`; that tool remains the explicit “I know the backend field” path.
 - No attempt to implement every possible Elasticsearch aggregation in this tranche.
@@ -206,7 +206,7 @@ The architectural change is the introduction of schema awareness as a reusable l
 
 - [ ] **Unit 3: Add nested filters and nested evidence extraction**
 
-**Goal:** Support layer-level investigation inside nested log arrays such as `slowest_layers[]`.
+**Goal:** Support object-level investigation inside nested log arrays such as `steps[]`.
 
 **Requirements:** F3, F4, F8
 
@@ -239,12 +239,12 @@ The architectural change is the introduction of schema awareness as a reusable l
 
 **Test scenarios:**
 - Happy path: a nested filter returns parent hits plus only the matching nested object payload.
-- Happy path: nested extraction for `slowest_layers.layer` returns compact evidence fields for the matching layer.
+- Happy path: nested extraction for `steps.name` returns compact evidence fields for the matching object.
 - Error path: requesting nested filtering on a non-nested path fails with a clear schema error.
 - Edge case: multiple nested matches in one parent hit are all returned in stable order.
 
 **Verification:**
-- An agent can inspect one problematic layer inside a reload stats event without manually parsing the whole parent document.
+- An agent can inspect one problematic object inside a structured stats event without manually parsing the whole parent document.
 
 - [ ] **Unit 4: Add cursor pagination for large hit sets**
 

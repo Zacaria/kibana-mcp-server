@@ -2,7 +2,7 @@
 
 ## Scope
 
-This review reflects live checks against the updated Kibana MCP server using the staging Kibana endpoint and the `ppr-api-notif-consumers` source.
+This review reflects live checks against the updated Kibana MCP server using a real Kibana deployment and one high-volume structured-log source.
 
 ## Closed Gaps
 
@@ -40,7 +40,7 @@ This is still working and remains a useful capability.
 
 Observed behavior:
 
-- exact filter on `event.keyword = MEMOIZE_TREE_RELOAD_STATS`
+- exact filter on `event.keyword = WORKFLOW_RELOAD_STATS`
 - `sort_by = total_duration_ms`
 - correct descending ranking of slow hits
 
@@ -56,8 +56,8 @@ This is not yet usable.
 
 Observed behavior:
 
-- `describe_fields(source_id="ppr_api_notif_consumers", query="event")`
-- `describe_fields(source_id="ppr_api_notif_consumers", query="slowest_layers")`
+- `describe_fields(source_id="workflow_metrics", query="event")`
+- `describe_fields(source_id="workflow_metrics", query="steps")`
 
 Both failed with:
 
@@ -74,7 +74,7 @@ Impact:
 
 Required fix:
 
-- make `describe_fields` resolve against the actual staging backend path and source configuration
+- make `describe_fields` resolve against the actual backend path and source configuration
 
 ### 2. Exact-Match Auto-Resolution Is Still Missing
 
@@ -82,7 +82,7 @@ This is still a real correctness issue.
 
 Observed behavior:
 
-- filtering on `field = event`, `value = PRODUCT_OPENING_DATES_REFRESH_PHASES` returned `0` hits
+- filtering on `field = event`, `value = CACHE_REFRESH_PHASES` returned `0` hits
 - the MCP resolved the field as plain `event`
 - the same search works when using `event.keyword`
 
@@ -105,16 +105,16 @@ Observed behavior:
 
 - query attempted with:
   - `nested_filters`
-  - path `slowest_layers`
-  - field `layer`
-  - value `MEMOIZE_V3:PRODUCT_WITHOUT_PRICE_V2`
+  - path `steps`
+  - field `name`
+  - value `CACHE_REFRESH`
   - `extract_nested = true`
 - result: Kibana `404 Not Found`
 
 Impact:
 
-- protocol checks that depend on `slowest_layers[]` still cannot be done natively
-- layer-level validation inside `MEMOIZE_TREE_RELOAD_STATS` still requires manual raw-document inspection or external calls
+- checks that depend on `steps[]` still cannot be done natively
+- object-level validation inside `WORKFLOW_RELOAD_STATS` still requires manual raw-document inspection or external calls
 
 Required fix:
 
@@ -134,4 +134,4 @@ However, three high-value capabilities are still not usable in live checks:
 2. exact-match safe field resolution
 3. nested filtering and nested extraction
 
-These are now the main remaining Kibana MCP gaps for the staging protocol log workflow.
+These are now the main remaining Kibana MCP gaps for schema-aware log investigation.

@@ -7,9 +7,9 @@ topic: kibana-log-investigation-mcp
 
 ## Problem Frame
 
-An agent needs a small, reliable MCP surface to investigate staging incidents and validation workflows through Kibana logs without direct manual Kibana use. The immediate driver is the logs-investigation portion of `../digital-api/STAGING_TEST_PROTOCOL.md`, which requires correlating consumer logs, API logs, and metric-like log events around a precise `ICC:B2C_OPENING_DATES` reload window.
+An agent needs a small, reliable MCP surface to investigate incidents and validation workflows through Kibana logs without direct manual Kibana use. The immediate driver is a realistic workflow that requires correlating application logs, API logs, and structured metrics-style events around a precise trigger window.
 
-The MCP should stay general. It should not hardcode this one protocol, but it must make this protocol easy to execute by giving agents a short path to the right sources, the right time window, and evidence-rich results.
+The MCP should stay general. It should not hardcode one protocol, but it must make repeated investigation patterns easy to execute by giving agents a short path to the right sources, the right time window, and evidence-rich results.
 
 ```mermaid
 flowchart TB
@@ -25,8 +25,8 @@ flowchart TB
 | Approach | Description | Pros | Cons | Recommendation |
 |---|---|---|---|---|
 | Dynamic environment discovery | Discover every reachable Kibana source and infer fields at runtime | Very general | More brittle, more backend complexity, weaker predictability for v1 | No |
-| Configured source catalog plus general query modes | Operators define logical sources and field hints, while agents use generic `discover` and `query` tools | Small surface, predictable, fits the staging use case well, still general through configuration | Requires setup for each environment | Yes |
-| Protocol-specific investigation helpers | Add tools tailored to reload validation steps | Fastest for this one protocol | Hardcodes one workflow and weakens reuse | No |
+| Configured source catalog plus general query modes | Operators define logical sources and field hints, while agents use generic `discover` and `query` tools | Small surface, predictable, fits common investigation work well, still general through configuration | Requires setup for each environment | Yes |
+| Workflow-specific investigation helpers | Add tools tailored to one validation flow | Fastest for one workflow | Hardcodes one workflow and weakens reuse | No |
 
 ## Requirements
 
@@ -49,20 +49,20 @@ flowchart TB
 
 ## Success Criteria
 
-- An agent can find the configured consumer, API, and metric-like log sources needed for the logs portion of `../digital-api/STAGING_TEST_PROTOCOL.md`.
-- An agent can isolate the relevant `ICC:B2C_OPENING_DATES` execution window using count or histogram queries before requesting raw hits.
-- An agent can retrieve evidence for `MEMOIZE_TREE_RELOAD_STATS`, `PRODUCT_OPENING_DATES_REFRESH_PHASES`, and related reload events in a way that supports cross-source correlation.
+- An agent can find the configured application, API, and structured-metric log sources needed for a realistic investigation.
+- An agent can isolate the relevant `SERVICE_RELOAD` execution window using count or histogram queries before requesting raw hits.
+- An agent can retrieve evidence for `WORKFLOW_RELOAD_STATS`, `CACHE_REFRESH_PHASES`, and related events in a way that supports cross-source correlation.
 - An agent can compare before, during, and after windows using repeated `query` calls without needing extra protocol-specific tools.
 - The same MCP can be reused for a different incident or environment by changing source configuration rather than changing code.
 
 ## Scope Boundaries
 
 - No Redis inspection in this MCP.
-- No staging API execution or request triggering in this MCP.
+- No API execution or request triggering in this MCP.
 - No Kibana dashboard, saved object, or visualization management.
 - No write or admin capabilities.
 - No natural-language-only query interface in v1.
-- No hardcoded `ICC:B2C_OPENING_DATES` or protocol-specific helper tools in v1.
+- No hardcoded business markers or workflow-specific helper tools in v1.
 
 ## Key Decisions
 
@@ -70,12 +70,12 @@ flowchart TB
 - Keep the primary tool shape to `discover` and `query`, with field guidance folded into discovery for v1.
 - Keep counts, histograms, and grouped counts inside `query` rather than creating extra aggregate tools.
 - Optimize the response shape for correlation and evidence extraction, not just backend fidelity.
-- Scope this product to logs investigation only, even though the full staging protocol also references API and Redis validation.
+- Scope this product to logs investigation only, even though a broader operational workflow may also reference API and datastore validation.
 
 ## Dependencies / Assumptions
 
 - Operators can provide Kibana base URL, basic-auth credentials, and the set of logical sources to expose.
-- The relevant log sources contain searchable text and/or structured fields for at least some identifiers such as locale, product id, request id, or layer name.
+- The relevant log sources contain searchable text and/or structured fields for at least some identifiers such as region, job id, trace id, or step name.
 - The Kibana environment provides a stable enough read path for discovery and structured search.
 
 ## Outstanding Questions

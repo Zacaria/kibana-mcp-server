@@ -13,19 +13,19 @@ describe("parseAppConfig", () => {
       {
         sources: [
           {
-            id: "consumer",
-            name: "Consumer",
-            tags: ["consumer"],
+            id: "app-logs",
+            name: "Application logs",
+            tags: ["application"],
             timeField: "@timestamp",
             backend: {
               kind: "kibana_internal_search_es",
               path: "/internal/search/es",
-              index: "consumer-*"
+              index: "app-logs-*"
             },
             schema: {
               kind: "kibana_data_views_fields",
               path: "/api/data_views/fields_for_wildcard",
-              index: "consumer-*"
+              index: "app-logs-*"
             }
           }
         ]
@@ -34,7 +34,7 @@ describe("parseAppConfig", () => {
 
     expect(config.kibana.baseUrl).toBe("https://kibana.example.com");
     expect(config.kibana.timeoutMs).toBe(10000);
-    expect(config.sources[0]?.id).toBe("consumer");
+    expect(config.sources[0]?.id).toBe("app-logs");
     expect(config.sources[0]?.schema?.kind).toBe("kibana_data_views_fields");
   });
 
@@ -48,18 +48,18 @@ describe("parseAppConfig", () => {
       {
         sources: [
           {
-            id: "ppr_api_notif_consumers",
-            name: "PPR API Notif Consumers",
-            tags: ["consumer"],
+            id: "workflow-metrics",
+            name: "Workflow metrics",
+            tags: ["workflow"],
             timeField: "@timestamp",
             backend: {
               kind: "kibana_internal_search_es",
               path: "/internal/search/es",
-              index: "ppr-api-notif-consumers"
+              index: "workflow-metrics-*"
             },
             schema: {
               kind: "kibana_data_views_fields",
-              index: "ppr-api-notif-consumers"
+              index: "workflow-metrics-*"
             }
           }
         ]
@@ -68,7 +68,7 @@ describe("parseAppConfig", () => {
 
     expect(config.sources[0]?.schema?.kind).toBe("kibana_data_views_fields");
     expect(config.sources[0]?.schema?.path).toBeUndefined();
-    expect(config.sources[0]?.schema?.index).toBe("ppr-api-notif-consumers");
+    expect(config.sources[0]?.schema?.index).toBe("workflow-metrics-*");
   });
 
   it("rejects missing credentials", () => {
@@ -82,13 +82,13 @@ describe("parseAppConfig", () => {
         {
           sources: [
             {
-              id: "consumer",
-              name: "Consumer",
-              tags: ["consumer"],
+              id: "app-logs",
+              name: "Application logs",
+              tags: ["application"],
               timeField: "@timestamp",
               backend: {
                 kind: "elasticsearch_search",
-                path: "/consumer/_search"
+                path: "/app-logs/_search"
               }
             }
           ]

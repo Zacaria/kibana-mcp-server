@@ -10,11 +10,11 @@ origin: docs/brainstorms/2026-04-02-kibana-log-investigation-requirements.md
 
 ## Overview
 
-Build a standalone MCP server for read-only Kibana log investigation. The v1 shape should stay small: `discover` exposes a configured catalog of logical sources, and `query` provides raw hits plus lightweight aggregate modes that help agents find and explain runtime behavior around a staging incident window.
+Build a standalone MCP server for read-only Kibana log investigation. The v1 shape should stay small: `discover` exposes a configured catalog of logical sources, and `query` provides raw hits plus lightweight aggregate modes that help agents find and explain runtime behavior around an incident window.
 
 ## Problem Frame
 
-The target user is another agent performing investigation work. The immediate use case is the logs-focused portion of `../digital-api/STAGING_TEST_PROTOCOL.md`, which requires correlating consumer, API, and metric-like log events around a precise `ICC:B2C_OPENING_DATES` reload window. Planning should preserve that concrete utility while keeping the MCP general enough to support other incidents through configuration rather than custom tools. See origin: `docs/brainstorms/2026-04-02-kibana-log-investigation-requirements.md`.
+The target user is another agent performing investigation work. The immediate use case is a logs-focused workflow that requires correlating application, API, and structured metric-like log events around a precise trigger window. Planning should preserve that concrete utility while keeping the MCP general enough to support other incidents through configuration rather than custom tools. See origin: `docs/brainstorms/2026-04-02-kibana-log-investigation-requirements.md`.
 
 ## Requirements Trace
 
@@ -25,9 +25,9 @@ The target user is another agent performing investigation work. The immediate us
 ## Scope Boundaries
 
 - No Redis inspection.
-- No staging API execution or trigger orchestration.
+- No API execution or trigger orchestration.
 - No Kibana administration, dashboard management, or saved-object mutation.
-- No protocol-specific helper tools for `ICC:B2C_OPENING_DATES` in v1.
+- No workflow-specific helper tools in v1.
 - No live tail or streaming behavior in v1.
 
 ## Context & Research
@@ -35,8 +35,8 @@ The target user is another agent performing investigation work. The immediate us
 ### Relevant Code and Patterns
 
 - The current repo has no implementation code yet, only `docs/sources/handoff.md` and documentation artifacts, so there are no local code patterns to preserve.
-- The adjacent repo at `../digital-api/package.json` and `../digital-api/tsconfig.json` shows a TypeScript and Node.js ecosystem. Aligning this MCP with that stack lowers setup and maintenance friction without coupling the codebases.
-- The staging workflow described in `../digital-api/STAGING_TEST_PROTOCOL.md` is the main behavioral reference for what “useful investigation” means in practice.
+- TypeScript and Node.js are the natural fit for a small standalone MCP server with straightforward transport and validation needs.
+- The motivating investigation workflow is the main behavioral reference for what “useful investigation” means in practice.
 
 ### Institutional Learnings
 
@@ -44,11 +44,11 @@ The target user is another agent performing investigation work. The immediate us
 
 ### External References
 
-- None used. The repo and adjacent staging protocol are sufficient for this first plan.
+- None used. The repo and motivating workflow are sufficient for this first plan.
 
 ## Key Technical Decisions
 
-- Use a standalone TypeScript and Node.js MCP server so the project starts from a low-friction stack that matches the adjacent ecosystem.
+- Use a standalone TypeScript and Node.js MCP server so the project starts from a low-friction stack.
 - Represent log surfaces as configured logical sources rather than dynamically discovering every reachable Kibana source in v1.
 - Keep the public MCP surface to `discover` and `query` in v1, with field hints included in `discover`.
 - Support `hits`, `count`, `histogram`, and `terms`-style grouped counts inside `query` instead of adding extra tools.
@@ -58,7 +58,7 @@ The target user is another agent performing investigation work. The immediate us
 
 ### Resolved During Planning
 
-- Should the MCP be general or protocol-specific? It should be general, with the staging protocol used as a grounding case rather than hardcoded product behavior.
+- Should the MCP be general or workflow-specific? It should be general, with one realistic workflow used as a grounding case rather than hardcoded product behavior.
 - Should discovery be dynamic or configured for v1? It should be configured for v1 because that is the highest-probability simple path.
 - Should logs-only scope include Redis or API actions? No. Those remain outside this MCP and belong to other tools or manual capabilities.
 
@@ -111,7 +111,6 @@ The design separates configuration, compilation, backend access, and response sh
 - Keep shared types explicit so discovery, query compilation, and normalization use the same contracts.
 
 **Patterns to follow:**
-- Mirror the adjacent TypeScript ESM posture in `../digital-api/package.json` and `../digital-api/tsconfig.json`.
 - Prefer small explicit modules because this repo has no established abstraction style yet.
 
 **Test scenarios:**
@@ -235,7 +234,7 @@ The design separates configuration, compilation, backend access, and response sh
 
 **Approach:**
 - Register exactly the `discover` and `query` tools in v1.
-- Provide an example source catalog showing how to model consumer, API, and metrics-like log sources without encoding the staging protocol directly into tool names or logic.
+- Provide an example source catalog showing how to model application, API, and metrics-like log sources without encoding one workflow directly into tool names or logic.
 - Document the required environment variables, config structure, and expected query patterns for before/during/after investigation flows.
 
 **Patterns to follow:**
@@ -247,7 +246,7 @@ The design separates configuration, compilation, backend access, and response sh
 - Integration: a tool call route from server registration to handler execution uses the shared schemas correctly.
 
 **Verification:**
-- A new operator can boot the server with sample config, see the two tools, and understand how to configure sources for the staging workflow.
+- A new operator can boot the server with sample config, see the two tools, and understand how to configure sources for a typical investigation workflow.
 
 ## System-Wide Impact
 
@@ -256,7 +255,7 @@ The design separates configuration, compilation, backend access, and response sh
 - **State lifecycle risks:** The server should stay stateless between calls so repeated investigations do not leak context across requests.
 - **API surface parity:** The v1 public surface stays limited to `discover` and `query`; no extra helper tools should appear unless the discovery payload proves insufficient.
 - **Integration coverage:** Multi-source fanout and normalization need integration-style tests because unit tests alone will not prove merged response behavior.
-- **Unchanged invariants:** The server remains read-only and does not execute staging API requests, mutate Kibana, or inspect Redis.
+- **Unchanged invariants:** The server remains read-only and does not execute external API requests, mutate Kibana, or inspect Redis.
 
 ## Risks & Dependencies
 

@@ -1,54 +1,54 @@
 {
   "sources": [
     {
-      "id": "consumer",
-      "name": "Consumer cache refresh logs",
-      "description": "Consumer-side execution logs for memoize refresh work.",
-      "tags": ["consumer", "cache-refresh", "staging"],
+      "id": "app_logs",
+      "name": "Application logs",
+      "description": "Application-side execution logs for core workflows.",
+      "tags": ["application", "logs", "runtime"],
       "timeField": "@timestamp",
       "backend": {
         "kind": "kibana_internal_search_es",
         "path": "/internal/search/es",
-        "index": ["consumer-*"]
+        "index": ["app-logs-*"]
       },
       "schema": {
         "kind": "kibana_data_views_fields",
-        "index": ["consumer-*"]
+        "index": ["app-logs-*"]
       },
       "fieldHints": [
         {
-          "name": "requestId",
-          "aliases": ["request_id", "correlation_id"],
-          "description": "Correlation id for one reload flow."
+          "name": "traceId",
+          "aliases": ["trace_id", "correlation_id"],
+          "description": "Correlation id for one workflow execution."
         },
         {
-          "name": "locale",
-          "aliases": ["language"],
-          "description": "Locale used in the reload."
+          "name": "region",
+          "aliases": ["location"],
+          "description": "Region or deployment segment for the event."
         },
         {
-          "name": "productId",
-          "aliases": ["product_id"],
-          "description": "Product identifier involved in the reload."
+          "name": "tenantId",
+          "aliases": ["tenant_id"],
+          "description": "Tenant or customer identifier involved in the workflow."
         }
       ],
       "defaultTextFields": ["message", "event.original"],
-      "evidenceFields": ["requestId", "locale", "productId", "layer", "duration_ms"]
+      "evidenceFields": ["traceId", "region", "tenantId", "operation", "duration_ms"]
     },
     {
-      "id": "api",
+      "id": "api_logs",
       "name": "API request logs",
-      "description": "Application-side API logs for before/after validation windows.",
-      "tags": ["api", "latency", "staging"],
+      "description": "Request and response logs for HTTP APIs.",
+      "tags": ["api", "http", "latency"],
       "timeField": "@timestamp",
       "backend": {
         "kind": "kibana_internal_search_es",
         "path": "/internal/search/es",
-        "index": ["api-*"]
+        "index": ["api-logs-*"]
       },
       "schema": {
         "kind": "kibana_data_views_fields",
-        "index": ["api-*"]
+        "index": ["api-logs-*"]
       },
       "fieldHints": [
         {
@@ -65,19 +65,19 @@
       "evidenceFields": ["route", "statusCode", "duration_ms"]
     },
     {
-      "id": "reload-metrics",
-      "name": "Reload metrics-style log events",
-      "description": "Structured log events such as MEMOIZE_TREE_RELOAD_STATS and PRODUCT_OPENING_DATES_REFRESH_PHASES.",
-      "tags": ["metrics", "reload", "staging"],
+      "id": "workflow_metrics",
+      "name": "Workflow metrics logs",
+      "description": "Structured log events such as WORKFLOW_RELOAD_STATS and CACHE_REFRESH_PHASES.",
+      "tags": ["metrics", "workflow", "structured"],
       "timeField": "@timestamp",
       "backend": {
         "kind": "kibana_internal_search_es",
         "path": "/internal/search/es",
-        "index": ["consumer-*"]
+        "index": ["workflow-metrics-*"]
       },
       "schema": {
         "kind": "kibana_data_views_fields",
-        "index": ["consumer-*"]
+        "index": ["workflow-metrics-*"]
       },
       "fieldHints": [
         {
@@ -86,12 +86,12 @@
           "description": "Logical event marker for metrics-style logs."
         },
         {
-          "name": "layer",
-          "description": "Memoize layer name."
+          "name": "step",
+          "description": "Workflow step name."
         }
       ],
       "defaultTextFields": ["message", "eventName"],
-      "evidenceFields": ["eventName", "layer", "keys_scanned", "keys_reloaded", "duration_ms"]
+      "evidenceFields": ["eventName", "step", "items_scanned", "items_reloaded", "duration_ms"]
     }
   ]
 }

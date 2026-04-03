@@ -4,23 +4,23 @@ import { compileQueryPlan } from "../src/query/compiler.js";
 import type { SourceDefinition, SourceFieldDescriptor } from "../src/types.js";
 
 const source: SourceDefinition = {
-  id: "consumer",
-  name: "Consumer",
-  tags: ["consumer"],
+  id: "app-logs",
+  name: "Application logs",
+  tags: ["application"],
   timeField: "@timestamp",
   backend: {
     kind: "kibana_internal_search_es",
     path: "/internal/search/es",
-    index: "consumer-*"
+    index: "app-logs-*"
   },
   fieldHints: [
     {
-      name: "productId",
-      aliases: ["product_id"]
+      name: "traceId",
+      aliases: ["trace_id"]
     }
   ],
   defaultTextFields: ["message"],
-  evidenceFields: ["productId"]
+  evidenceFields: ["traceId"]
 };
 
 const sourceSchema: SourceFieldDescriptor[] = [
@@ -46,35 +46,35 @@ describe("compileQueryPlan", () => {
   it("compiles a hits query with resolved field aliases", () => {
     const plan = compileQueryPlan(
       {
-        source_ids: ["consumer"],
+        source_ids: ["app-logs"],
         start_time: "2026-04-02T12:00:00Z",
         end_time: "2026-04-02T12:05:00Z",
-        text: "reload",
-        filters: [{ field: "product_id", value: "123" }],
+        text: "workflow",
+        filters: [{ field: "trace_id", value: "trace-123" }],
         mode: "hits",
-        sort_by: "product_id",
+        sort_by: "trace_id",
         limit: 25
       },
       [source]
     );
 
     expect(plan.mode).toBe("hits");
-    expect(plan.sourceQueries[0]?.resolvedFilters[0]?.resolved_field).toBe("productId");
-    expect(plan.sourceQueries[0]?.resolvedSortBy).toBe("productId");
+    expect(plan.sourceQueries[0]?.resolvedFilters[0]?.resolved_field).toBe("traceId");
+    expect(plan.sourceQueries[0]?.resolvedSortBy).toBe("traceId");
     expect(plan.sourceQueries[0]?.request.body).toMatchObject({
       size: 25,
-      sort: [{ productId: { order: "desc" } }]
+      sort: [{ traceId: { order: "desc" } }]
     });
   });
 
   it("compiles terms aggregations", () => {
     const plan = compileQueryPlan(
       {
-        source_ids: ["consumer"],
+        source_ids: ["app-logs"],
         start_time: "2026-04-02T12:00:00Z",
         end_time: "2026-04-02T12:05:00Z",
         mode: "terms",
-        group_by: "product_id",
+        group_by: "trace_id",
         limit: 5
       },
       [source]
@@ -84,7 +84,7 @@ describe("compileQueryPlan", () => {
       aggs: {
         groups: {
           terms: {
-            field: "productId",
+            field: "traceId",
             size: 5
           }
         }
@@ -95,10 +95,10 @@ describe("compileQueryPlan", () => {
   it("preserves exact field names when alias resolution is disabled", () => {
     const plan = compileQueryPlan(
       {
-        source_ids: ["consumer"],
+        source_ids: ["app-logs"],
         start_time: "2026-04-02T12:00:00Z",
         end_time: "2026-04-02T12:05:00Z",
-        filters: [{ field: "product_id", value: "123" }],
+        filters: [{ field: "trace_id", value: "trace-123" }],
         mode: "hits",
         limit: 25
       },
@@ -108,23 +108,23 @@ describe("compileQueryPlan", () => {
       }
     );
 
-    expect(plan.sourceQueries[0]?.resolvedFilters[0]?.resolved_field).toBe("product_id");
+    expect(plan.sourceQueries[0]?.resolvedFilters[0]?.resolved_field).toBe("trace_id");
     expect(plan.sourceQueries[0]?.resolvedSortBy).toBe("@timestamp");
   });
 
   it("prefers keyword-safe exact fields in query mode when schema metadata is available", () => {
     const plan = compileQueryPlan(
       {
-        source_ids: ["consumer"],
+        source_ids: ["app-logs"],
         start_time: "2026-04-02T12:00:00Z",
         end_time: "2026-04-02T12:05:00Z",
-        filters: [{ field: "event", value: "PRODUCT_OPENING_DATES_REFRESH_PHASES" }],
+        filters: [{ field: "event", value: "CACHE_REFRESH_PHASES" }],
         mode: "hits",
         limit: 25
       },
       [source],
       {
-        sourceSchemas: new Map([["consumer", sourceSchema]])
+        sourceSchemas: new Map([["app-logs", sourceSchema]])
       }
     );
 
@@ -136,16 +136,16 @@ describe("compileQueryPlan", () => {
   it("warns when schema-backed exact-field resolution is unavailable", () => {
     const plan = compileQueryPlan(
       {
-        source_ids: ["consumer"],
+        source_ids: ["app-logs"],
         start_time: "2026-04-02T12:00:00Z",
         end_time: "2026-04-02T12:05:00Z",
-        filters: [{ field: "event", value: "PRODUCT_OPENING_DATES_REFRESH_PHASES" }],
+        filters: [{ field: "event", value: "CACHE_REFRESH_PHASES" }],
         mode: "hits",
         limit: 25
       },
       [source],
       {
-        sourceSchemaErrors: new Map([["consumer", "schema backend returned 404 Not Found"]])
+        sourceSchemaErrors: new Map([["app-logs", "schema backend returned 404 Not Found"]])
       }
     );
 
@@ -156,17 +156,17 @@ describe("compileQueryPlan", () => {
   it("applies search_after values when a cursor is provided", () => {
     const cursor = Buffer.from(
       JSON.stringify({
-        source_id: "consumer",
+        source_id: "app-logs",
         sort: "desc",
-        sort_by: "productId",
-        values: ["123"]
+        sort_by: "traceId",
+        values: ["trace-123"]
       }),
       "utf8"
     ).toString("base64url");
 
     const plan = compileQueryPlan(
       {
-        source_ids: ["consumer"],
+        source_ids: ["app-logs"],
         start_time: "2026-04-02T12:00:00Z",
         end_time: "2026-04-02T12:05:00Z",
         mode: "hits",
@@ -177,7 +177,7 @@ describe("compileQueryPlan", () => {
     );
 
     expect(plan.sourceQueries[0]?.request.body).toMatchObject({
-      search_after: ["123"]
+      search_after: ["trace-123"]
     });
   });
 });

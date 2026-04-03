@@ -6,22 +6,22 @@ import { SourceCatalog } from "../src/source_catalog.js";
 import type { SourceDefinition, SourceFieldDescriptor } from "../src/types.js";
 
 const source: SourceDefinition = {
-  id: "consumer",
-  name: "Consumer",
-  tags: ["consumer"],
+  id: "app-logs",
+  name: "Application logs",
+  tags: ["application"],
   timeField: "@timestamp",
   backend: {
     kind: "elasticsearch_search",
-    path: "/consumer/_search"
+    path: "/app-logs/_search"
   },
   fieldHints: [
     {
-      name: "productId",
-      aliases: ["product_id"]
+      name: "traceId",
+      aliases: ["trace_id"]
     }
   ],
   defaultTextFields: ["message"],
-  evidenceFields: ["productId"]
+  evidenceFields: ["traceId"]
 };
 
 const sourceSchema: SourceFieldDescriptor[] = [
@@ -48,11 +48,11 @@ describe("executeFilter", () => {
     let capturedBody: Record<string, unknown> | undefined;
     const result = await executeFilter(
       {
-        source_ids: ["consumer"],
+        source_ids: ["app-logs"],
         start_time: "2026-04-02T12:00:00Z",
         end_time: "2026-04-02T12:05:00Z",
-        field: "product_id",
-        value: "123",
+        field: "trace_id",
+        value: "trace-123",
         mode: "hits",
         sort: "desc",
         sort_by: "total_duration_ms",
@@ -82,7 +82,7 @@ describe("executeFilter", () => {
     );
 
     expect(result.total).toBe(0);
-    expect(result.query_echo.filters[0]?.resolved_field).toBe("product_id");
+    expect(result.query_echo.filters[0]?.resolved_field).toBe("trace_id");
     expect(result.query_echo.sort_by).toBe("total_duration_ms");
     expect(result.query_echo.resolved_sort_by_by_source?.[0]?.resolved_sort_by).toBe(
       "total_duration_ms"
@@ -90,7 +90,7 @@ describe("executeFilter", () => {
     expect(capturedBody).toMatchObject({
       query: {
         bool: {
-          must: [{}, { term: { product_id: "123" } }]
+          must: [{}, { term: { trace_id: "trace-123" } }]
         }
       },
       sort: [{ total_duration_ms: { order: "desc" } }]
@@ -100,11 +100,11 @@ describe("executeFilter", () => {
   it("rejects sort_by outside hits mode", async () => {
     expect(() =>
       filterInputSchema.parse({
-        source_ids: ["consumer"],
+        source_ids: ["app-logs"],
         start_time: "2026-04-02T12:00:00Z",
         end_time: "2026-04-02T12:05:00Z",
-        field: "product_id",
-        value: "123",
+        field: "trace_id",
+        value: "trace-123",
         mode: "count",
         sort: "desc",
         sort_by: "total_duration_ms",
@@ -121,11 +121,11 @@ describe("executeFilter", () => {
     let capturedBody: Record<string, unknown> | undefined;
     const result = await executeFilter(
       {
-        source_ids: ["consumer"],
+        source_ids: ["app-logs"],
         start_time: "2026-04-02T12:00:00Z",
         end_time: "2026-04-02T12:05:00Z",
         field: "event",
-        value: "PRODUCT_OPENING_DATES_REFRESH_PHASES",
+        value: "CACHE_REFRESH_PHASES",
         mode: "hits",
         sort: "desc",
         limit: 10,
@@ -163,7 +163,7 @@ describe("executeFilter", () => {
     expect(capturedBody).toMatchObject({
       query: {
         bool: {
-          must: [{}, { term: { "event.keyword": "PRODUCT_OPENING_DATES_REFRESH_PHASES" } }]
+          must: [{}, { term: { "event.keyword": "CACHE_REFRESH_PHASES" } }]
         }
       }
     });

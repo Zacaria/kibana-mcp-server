@@ -4,7 +4,7 @@
 
 Build a minimal MCP interface that lets another agent investigate runtime behavior in logs without direct Kibana access.
 
-This handoff is intentionally abstracted from the current business case. The objective is not to encode one incident, but to provide the smallest useful log-investigation surface for staging or production validation work.
+This handoff is intentionally abstracted from any single business case. The objective is to provide the smallest useful log-investigation surface for operational validation and incident work.
 
 ## Minimum toolset
 

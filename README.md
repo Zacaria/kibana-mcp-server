@@ -10,7 +10,7 @@ The server is intentionally small:
 - `filter` runs an exact-field filter when the field name is already known
 - `query` searches one or more sources over an absolute time window in `hits`, `count`, `histogram`, `terms`, `stats`, or `grouped_top_hits` mode
 
-This is designed to stay general while still serving the logs-investigation portion of `../digital-api/STAGING_TEST_PROTOCOL.md`.
+It is designed as a general-purpose log investigation MCP for environments where operators can expose a small set of useful logical sources.
 
 ## Requirements
 
@@ -84,32 +84,32 @@ Supported schema backend kinds:
   - GETs an Elasticsearch field capabilities endpoint such as `/<index-pattern>/_field_caps?fields=*`
   - uses `schema.path` when provided or derives the default from `schema.index`
 
-Current staging note:
+Deployment note:
 
-- for `https://api.staging.clubmed.com/logs`, live checks showed that direct schema endpoints like `/api/data_views/fields_for_wildcard`, `/api/index_patterns/_fields_for_wildcard`, and `/<index>/_field_caps` return `404`
-- the server now falls back to sampling fields through the working search backend when those direct metadata endpoints are unavailable
-- this fallback is heuristic rather than authoritative, but it is enough to recover `.keyword` promotion and nested-path discovery in environments where only `/internal/search/es` is exposed
+- some Kibana deployments expose search transport but not field-metadata endpoints
+- when direct schema endpoints such as `/api/data_views/fields_for_wildcard`, `/api/index_patterns/_fields_for_wildcard`, or `/<index>/_field_caps` return `404`, the server falls back to sampling fields through the configured search backend
+- this fallback is heuristic rather than authoritative, but it is often sufficient to recover `.keyword` promotion and object-path discovery in search-only environments
 
-Recommended staging source shape for the consumer log stream:
+Example source shape for an application log stream:
 
 ```json
 {
-  "id": "ppr_api_notif_consumers",
-  "name": "PPR API Notif Consumers",
+  "id": "app_logs",
+  "name": "Application Logs",
   "timeField": "@timestamp",
   "backend": {
     "kind": "kibana_internal_search_es",
     "path": "/internal/search/es",
-    "index": "ppr-api-notif-consumers"
+    "index": "app-logs-*"
   },
   "schema": {
     "kind": "kibana_data_views_fields",
-    "index": "ppr-api-notif-consumers"
+    "index": "app-logs-*"
   }
 }
 ```
 
-Keep `schema.path` omitted for this staging setup. The server will try the known Kibana metadata endpoints first and then fall back to search-transport sampling if those endpoints still return `404`.
+Keep `schema.path` omitted for this setup. The server will try the known Kibana metadata endpoints first and then fall back to search-transport sampling if those endpoints still return `404`.
 
 ## Running
 
@@ -137,27 +137,27 @@ Input:
   },
   "sources": [
     {
-      "id": "consumer",
-      "name": "Consumer cache refresh logs",
-      "tags": ["consumer", "cache-refresh", "staging"],
+      "id": "app_logs",
+      "name": "Application Logs",
+      "tags": ["app", "logs", "production"],
       "timeField": "@timestamp",
       "backend": {
         "kind": "kibana_internal_search_es",
         "path": "/internal/search/es",
-        "index": ["consumer-*"]
+        "index": ["app-logs-*"]
       },
       "schema": {
         "kind": "kibana_data_views_fields",
-        "index": ["consumer-*"]
+        "index": ["app-logs-*"]
       },
       "fieldHints": [
         {
-          "name": "requestId",
-          "aliases": ["request_id"]
+          "name": "traceId",
+          "aliases": ["trace_id"]
         }
       ],
       "defaultTextFields": ["message"],
-      "evidenceFields": ["requestId"]
+      "evidenceFields": ["traceId"]
     }
   ]
 }
@@ -166,7 +166,7 @@ Input:
 If you do not bootstrap via env vars, call `configure` before `discover` or `query`.
 Calling `configure` also persists the provided sources to the runtime source-catalog file so later restarts can reload them automatically.
 If you want `describe_fields`, exact-field auto-resolution in `query`, or nested-filter validation, configure `schema` for each relevant source.
-For the current staging Kibana endpoint at `https://api.staging.clubmed.com/logs`, prefer `schema.kind = "kibana_data_views_fields"` with `schema.index` set and omit `schema.path`.
+In deployments where schema endpoints are routed indirectly or return `404`, prefer `schema.kind = "kibana_data_views_fields"` with `schema.index` set and omit `schema.path`.
 
 ### `discover`
 
@@ -174,7 +174,7 @@ Input:
 
 ```json
 {
-  "query": "consumer",
+  "query": "application",
   "limit": 10
 }
 ```
@@ -197,7 +197,7 @@ Input:
 
 ```json
 {
-  "source_id": "reload-metrics",
+  "source_id": "workflow_metrics",
   "query": "event",
   "limit": 50
 }
@@ -218,19 +218,19 @@ Input:
 
 ```json
 {
-  "source_ids": ["consumer", "reload-metrics"],
+  "source_ids": ["app_logs", "workflow_metrics"],
   "start_time": "2026-04-02T12:00:00Z",
   "end_time": "2026-04-02T12:15:00Z",
-  "text": "ICC:B2C_OPENING_DATES",
+  "text": "SERVICE_RELOAD",
   "filters": [
-    { "field": "locale", "value": "en-US" },
-    { "field": "productId", "value": "12345" }
+    { "field": "region", "value": "us-east-1" },
+    { "field": "traceId", "value": "trace-12345" }
   ],
   "nested_filters": [
     {
-      "path": "slowest_layers",
-      "field": "layer",
-      "value": "MEMOIZE_V3:PRODUCT_OPENING_DATES_V3"
+      "path": "steps",
+      "field": "name",
+      "value": "CACHE_REFRESH"
     }
   ],
   "extract_nested": true,
@@ -264,7 +264,7 @@ For very large single-source hit sets, `query` also supports cursor pagination:
 
 ```json
 {
-  "source_ids": ["reload-metrics"],
+  "source_ids": ["workflow_metrics"],
   "start_time": "2026-04-02T12:00:00Z",
   "end_time": "2026-04-02T12:15:00Z",
   "mode": "hits",
@@ -281,12 +281,12 @@ Example `stats` query:
 
 ```json
 {
-  "source_ids": ["reload-metrics"],
+  "source_ids": ["workflow_metrics"],
   "start_time": "2026-04-02T12:00:00Z",
   "end_time": "2026-04-02T12:15:00Z",
   "mode": "stats",
   "stats_field": "total_duration_ms",
-  "group_by": "request_id",
+  "group_by": "trace_id",
   "limit": 25
 }
 ```
@@ -295,11 +295,11 @@ Example `grouped_top_hits` query:
 
 ```json
 {
-  "source_ids": ["reload-metrics"],
+  "source_ids": ["workflow_metrics"],
   "start_time": "2026-04-02T12:00:00Z",
   "end_time": "2026-04-02T12:15:00Z",
   "mode": "grouped_top_hits",
-  "group_by": "request_id",
+  "group_by": "trace_id",
   "sort_by": "total_duration_ms",
   "top_hits_size": 1,
   "limit": 25
@@ -314,16 +314,16 @@ Input:
 
 ```json
 {
-  "source_ids": ["reload-metrics"],
+  "source_ids": ["workflow_metrics"],
   "start_time": "2026-04-02T12:00:00Z",
   "end_time": "2026-04-02T12:15:00Z",
   "field": "eventName.keyword",
-  "value": "MEMOIZE_TREE_RELOAD_STATS",
+  "value": "WORKFLOW_RELOAD_STATS",
   "nested_filters": [
     {
-      "path": "slowest_layers",
-      "field": "slowest_layers.layer.keyword",
-      "value": "MEMOIZE_V3:PRODUCT_OPENING_DATES_V3"
+      "path": "steps",
+      "field": "steps.name.keyword",
+      "value": "CACHE_REFRESH"
     }
   ],
   "extract_nested": true,
