@@ -24,6 +24,44 @@ It is designed as a general-purpose log investigation MCP for environments where
 npm install
 ```
 
+## Use In Codex
+
+This repo includes a repo-scoped Codex plugin so a cloned checkout can install the MCP without any extra packaging or hosted infrastructure.
+
+### Quick path
+
+1. Clone the repository.
+2. Make sure Node.js 22+ is available.
+   - if it is missing, ask Codex to use the plugin skill `ensure-node-runtime`
+   - the repo pins Node major `22` in `.node-version`
+3. From the repo root, run:
+
+```bash
+npm install
+npm run build
+```
+
+4. Open the cloned repo in Codex.
+5. Open the plugin directory in Codex and install `Kibana Log Investigation` from the repo marketplace.
+6. Restart Codex if the new MCP server does not appear immediately.
+7. Configure the server with Kibana credentials and sources:
+   - either call the MCP `configure` tool
+   - or set `KIBANA_*` env vars and use a local source-catalog file
+
+Repo-scoped plugin files:
+
+- `.agents/plugins/marketplace.json`
+- `plugins/kibana-log-investigation/.codex-plugin/plugin.json`
+- `plugins/kibana-log-investigation/.mcp.json`
+
+### Minimal handoff prompt
+
+If you are handing only the repo link to another Codex agent, this usually works:
+
+```text
+Clone this repo, ensure Node.js 22+ is installed at user level for the current OS, run npm install and npm run build, install the repo plugin named "Kibana Log Investigation", then configure it for my Kibana environment.
+```
+
 ## Configuration
 
 The server can be configured in either of two ways:

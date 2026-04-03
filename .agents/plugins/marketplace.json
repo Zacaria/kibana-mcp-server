@@ -1,0 +1,20 @@
+{
+  "name": "kibana-mcp-server",
+  "interface": {
+    "displayName": "Kibana MCP Server"
+  },
+  "plugins": [
+    {
+      "name": "kibana-log-investigation",
+      "source": {
+        "source": "local",
+        "path": "./plugins/kibana-log-investigation"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
