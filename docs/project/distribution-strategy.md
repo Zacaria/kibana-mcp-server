@@ -29,7 +29,7 @@ This path is required for development and is the baseline for support.
 
 The package surface is prepared for agent-friendly execution via:
 
-- `npx -y kibana-mcp-server`
+- `npx -y @zacaria/kibana-mcp-server`
 - MCP clients that invoke the published package binary instead of a repo-local build
 
 Public publishing remains gated until the following are complete:

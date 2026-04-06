@@ -8,14 +8,16 @@ updated: 2026-04-06
 
 This repo is prepared for npm trusted publishing from GitHub Actions, but npm-side setup is still required before the first successful publish.
 
-## Current Blocker
+## Package Identity
 
-The unscoped package name `kibana-mcp-server` is already published by another maintainer account. That means this repository cannot enable trusted publishing for that package name unless one of the following happens:
+The intended published package is `@zacaria/kibana-mcp-server`.
 
-- the current package owner transfers ownership to the maintainers of this repo
-- the project switches to a package name or scope controlled by this repo's maintainer account
+Before enabling trusted publishing, confirm both of these are true:
 
-Do not configure trusted publishing against a package you do not control.
+- the npm scope `@zacaria` is owned by the maintainer account that will publish this package
+- the package `@zacaria/kibana-mcp-server` is either unclaimed or already owned by that scope
+
+Do not configure trusted publishing against a package or scope you do not control.
 
 ## Repo-Side Publish Workflow
 
@@ -49,3 +51,4 @@ After package ownership is resolved:
 - The workflow requires `id-token: write`.
 - The package must remain public for provenance to be generated automatically.
 - The package `repository` field must match this public GitHub repository exactly.
+- The npm package name in `package.json` must stay aligned with the package configured in npm trusted publishers.

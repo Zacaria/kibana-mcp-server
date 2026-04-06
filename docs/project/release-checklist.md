@@ -12,7 +12,7 @@ updated: 2026-04-06
 - `npm run verify` passes locally.
 - The compatibility matrix is up to date (`docs/project/compatibility-matrix.md`).
 - Any new env or config requirements are documented in `README.md` and `INSTALL.md`.
-- The npm package name is owned by the maintainers, or the package has been renamed to one they control.
+- The npm scope and package name (`@zacaria/kibana-mcp-server`) are owned by the maintainers.
 
 ## Release Authorization
 

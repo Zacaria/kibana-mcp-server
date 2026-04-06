@@ -11,10 +11,12 @@ describe("package contract", () => {
       bin?: Record<string, string>;
       files?: string[];
       main?: string;
+      name?: string;
       publishConfig?: { access?: string; provenance?: boolean };
       scripts?: Record<string, string>;
     };
 
+    expect(pkg.name).toBe("@zacaria/kibana-mcp-server");
     expect(pkg.main).toBe("dist/src/index.js");
     expect(pkg.bin?.["kibana-mcp-server"]).toBe("dist/src/index.js");
     expect(pkg.publishConfig?.access).toBe("public");
