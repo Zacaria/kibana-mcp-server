@@ -23,7 +23,8 @@ It is designed as a general-purpose log investigation MCP for environments where
 This repo targets external adoption and AI-agent usability. It is safe for real investigations, but the install and release posture is still evolving.
 
 - Guaranteed: repo-local Codex plugin install (see `INSTALL.md`)
-- Planned: public package distribution after artifact verification and release automation are in place
+- In progress: package binary contract for agent-friendly `npx` execution
+- Planned: public package distribution after trusted publishing is enabled
 - Support posture and compatibility details live in `docs/project/support-policy.md`
 - Contributing and security reporting live in `CONTRIBUTING.md` and `SECURITY.md`
 
@@ -42,6 +43,8 @@ npm install
 ## Use In Codex
 
 This repo includes a repo-scoped Codex plugin so a cloned checkout can install the MCP without any extra packaging or hosted infrastructure.
+
+The packaged CLI surface is also prepared for a future public install path. Once npm publishing is enabled, AI agents will be able to run the server with `npx -y kibana-mcp-server` instead of cloning the repo first.
 
 ### Quick path
 

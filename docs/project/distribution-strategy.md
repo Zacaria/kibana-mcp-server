@@ -27,7 +27,12 @@ This path is required for development and is the baseline for support.
 
 ### 2. Public package (planned, gated)
 
-Once artifact verification is stable, a public package can be published. Requirements:
+The package surface is prepared for agent-friendly execution via:
+
+- `npx -y kibana-mcp-server`
+- MCP clients that invoke the published package binary instead of a repo-local build
+
+Public publishing remains gated until the following are complete:
 
 - Verified `npm pack` contents (runtime entrypoint, plugin metadata, README, LICENSE).
 - CI and release workflows green on the supported Node line.
