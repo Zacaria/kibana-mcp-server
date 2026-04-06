@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
   pull-requests: write
 
 jobs:
@@ -20,13 +21,17 @@ jobs:
         with:
           node-version-file: .node-version
           cache: npm
+          registry-url: https://registry.npmjs.org
+      - name: Setup npm for trusted publishing
+        run: npm install --global npm@^11.5.1
       - name: Install
         run: npm ci
       - name: Verify
         run: npm run verify
-      - name: Create release PR
+      - name: Create release PR or publish package
         uses: changesets/action@v1
         with:
           version: npm run changeset:version
+          publish: npm run changeset:release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

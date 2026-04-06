@@ -12,18 +12,21 @@ updated: 2026-04-06
 - `npm run verify` passes locally.
 - The compatibility matrix is up to date (`docs/project/compatibility-matrix.md`).
 - Any new env or config requirements are documented in `README.md` and `INSTALL.md`.
+- The npm package name is owned by the maintainers, or the package has been renamed to one they control.
 
 ## Release Authorization
 
 - Releases are created via the `Release` GitHub Actions workflow.
+- Trusted publishing for npm must point at workflow file `release.yml`.
 - Tags and release PR merges require maintainer approval.
 - Only maintainers listed in `CODEOWNERS` should have permission to trigger releases.
 
 ## Security Posture for CI/Release
 
-- Workflow permissions must be minimal (`contents: read` for CI, `contents: write` + `pull-requests: write` for release PRs).
-- Publishing to npm must use OIDC trusted publishing when enabled.
+- Workflow permissions must be minimal (`contents: read` for CI, `contents: write` + `pull-requests: write` + `id-token: write` for release PRs and publish).
+- Publishing to npm must use OIDC trusted publishing.
 - Do not store long-lived npm tokens in repo secrets.
+- After trusted publishing is verified, disallow token-based publishing in npm package settings.
 
 ## Threat Model (Top 3)
 
@@ -35,9 +38,11 @@ updated: 2026-04-06
 
 1. Create or update Changeset(s).
 2. Run `npm run verify`.
-3. Merge the Changesets release PR.
-4. Confirm the generated changelog and version bump.
-5. If publishing is enabled, run the publish job and validate the package contents.
+3. Confirm the npm package identity is publishable by this maintainer account.
+4. Configure npm trusted publishing for `release.yml`.
+5. Merge the Changesets release PR.
+6. Confirm the generated changelog and version bump.
+7. Validate the published package contents and provenance.
 
 ## Post-Release
 

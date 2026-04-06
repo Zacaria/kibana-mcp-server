@@ -33,6 +33,7 @@ This repo targets external adoption and AI-agent usability. It is safe for real 
 - Distribution strategy: `docs/project/distribution-strategy.md`
 - Compatibility matrix: `docs/project/compatibility-matrix.md`
 - Release checklist: `docs/project/release-checklist.md`
+- npm publishing setup: `docs/project/npm-publishing.md`
 
 ## Installation
 
