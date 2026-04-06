@@ -1,5 +1,5 @@
 {
-  "name": "kibana-mcp-server",
+  "name": "@zacaria/kibana-mcp-server",
   "version": "0.1.0",
   "license": "MIT",
   "description": "Read-only MCP server for Kibana-backed log investigation and schema-aware querying",

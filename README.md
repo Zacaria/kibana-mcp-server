@@ -45,7 +45,7 @@ npm install
 
 This repo includes a repo-scoped Codex plugin so a cloned checkout can install the MCP without any extra packaging or hosted infrastructure.
 
-The packaged CLI surface is also prepared for a future public install path. Once npm publishing is enabled, AI agents will be able to run the server with `npx -y kibana-mcp-server` instead of cloning the repo first.
+The packaged CLI surface is also prepared for a future public install path. Once npm publishing is enabled, AI agents will be able to run the server with `npx -y @zacaria/kibana-mcp-server` instead of cloning the repo first.
 
 ### Quick path
 
