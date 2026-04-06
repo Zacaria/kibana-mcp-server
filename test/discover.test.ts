@@ -12,12 +12,12 @@ const catalog = new SourceCatalog([
     backend: {
       kind: "kibana_internal_search_es",
       path: "/internal/search/es",
-      index: "consumer-*"
+      index: "consumer-*",
     },
     fieldHints: [{ name: "requestId", aliases: ["request_id"] }],
     defaultTextFields: ["message"],
-    evidenceFields: ["requestId"]
-  }
+    evidenceFields: ["requestId"],
+  },
 ]);
 
 describe("executeDiscover", () => {

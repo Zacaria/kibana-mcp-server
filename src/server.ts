@@ -1,6 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/server";
 
-import type { AppConfig } from "./types.js";
 import { KibanaClient } from "./kibana_client.js";
 import { SchemaCatalog } from "./schema_catalog.js";
 import { SourceCatalog } from "./source_catalog.js";
@@ -8,40 +7,39 @@ import {
   configureInputSchema,
   configureOutputSchema,
   createConfigureCallToolResult,
-  executeConfigure
+  executeConfigure,
 } from "./tools/configure.js";
-import {
-  createDiscoverCallToolResult,
-  discoverInputSchema,
-  discoverOutputSchema,
-  executeDiscover
-} from "./tools/discover.js";
 import {
   createDescribeFieldsCallToolResult,
   describeFieldsInputSchema,
   describeFieldsOutputSchema,
-  executeDescribeFields
+  executeDescribeFields,
 } from "./tools/describe_fields.js";
+import {
+  createDiscoverCallToolResult,
+  discoverInputSchema,
+  discoverOutputSchema,
+  executeDiscover,
+} from "./tools/discover.js";
 import {
   createFilterCallToolResult,
   executeFilter,
   filterInputSchema,
-  filterOutputSchema
+  filterOutputSchema,
 } from "./tools/filter.js";
 import {
   createQueryCallToolResult,
   executeQuery,
   queryInputSchema,
-  queryOutputSchema
+  queryOutputSchema,
 } from "./tools/query.js";
+import type { AppConfig } from "./types.js";
 
 export interface Application {
   server: McpServer;
   handlers: {
     configure: (input: unknown) => Promise<Awaited<ReturnType<typeof executeConfigure>>["result"]>;
-    describe_fields: (
-      input: unknown
-    ) => Promise<Awaited<ReturnType<typeof executeDescribeFields>>>;
+    describe_fields: (input: unknown) => Promise<Awaited<ReturnType<typeof executeDescribeFields>>>;
     discover: (input: unknown) => ReturnType<typeof executeDiscover>;
     filter: (input: unknown) => ReturnType<typeof executeFilter>;
     query: (input: unknown) => ReturnType<typeof executeQuery>;
@@ -53,19 +51,21 @@ export function createApplication(
   dependencies?: {
     kibanaClient?: KibanaClient;
     kibanaClientFactory?: (config: AppConfig["kibana"]) => KibanaClient;
-  }
+  },
 ): Application {
   const server = new McpServer({
     name: "kibana-log-investigation",
-    version: "0.1.0"
+    version: "0.1.0",
   });
   const kibanaClientFactory =
-    dependencies?.kibanaClientFactory ?? ((config: AppConfig["kibana"]) => new KibanaClient(config));
+    dependencies?.kibanaClientFactory ??
+    ((config: AppConfig["kibana"]) => new KibanaClient(config));
 
   let activeConfig = initialConfig;
   let sourceCatalog = activeConfig ? new SourceCatalog(activeConfig.sources) : null;
-  let kibanaClient =
-    activeConfig ? dependencies?.kibanaClient ?? kibanaClientFactory(activeConfig.kibana) : null;
+  let kibanaClient = activeConfig
+    ? (dependencies?.kibanaClient ?? kibanaClientFactory(activeConfig.kibana))
+    : null;
   let schemaCatalog = kibanaClient ? new SchemaCatalog(kibanaClient) : null;
 
   function requireConfigured(): {
@@ -93,7 +93,7 @@ export function createApplication(
     executeDescribeFields(
       describeFieldsInputSchema.parse(input),
       requireConfigured().sourceCatalog,
-      requireConfigured().schemaCatalog
+      requireConfigured().schemaCatalog,
     );
   const discoverHandler = (input: unknown) =>
     executeDiscover(discoverInputSchema.parse(input), requireConfigured().sourceCatalog);
@@ -103,8 +103,8 @@ export function createApplication(
       requireConfigured().sourceCatalog,
       requireConfigured().kibanaClient,
       {
-        schemaCatalog: requireConfigured().schemaCatalog
-      }
+        schemaCatalog: requireConfigured().schemaCatalog,
+      },
     );
   const queryHandler = (input: unknown) =>
     executeQuery(
@@ -112,8 +112,8 @@ export function createApplication(
       requireConfigured().sourceCatalog,
       requireConfigured().kibanaClient,
       {
-        schemaCatalog: requireConfigured().schemaCatalog
-      }
+        schemaCatalog: requireConfigured().schemaCatalog,
+      },
     );
 
   server.registerTool(
@@ -122,9 +122,9 @@ export function createApplication(
       description:
         "Configure the Kibana connection and logical source catalog for this server session.",
       inputSchema: configureInputSchema,
-      outputSchema: configureOutputSchema
+      outputSchema: configureOutputSchema,
     },
-    async (input) => createConfigureCallToolResult(await configureHandler(input))
+    async (input) => createConfigureCallToolResult(await configureHandler(input)),
   );
 
   server.registerTool(
@@ -132,9 +132,9 @@ export function createApplication(
     {
       description: "Describe the effective field capabilities for a configured logical source.",
       inputSchema: describeFieldsInputSchema,
-      outputSchema: describeFieldsOutputSchema
+      outputSchema: describeFieldsOutputSchema,
     },
-    async (input) => createDescribeFieldsCallToolResult(await describeFieldsHandler(input))
+    async (input) => createDescribeFieldsCallToolResult(await describeFieldsHandler(input)),
   );
 
   server.registerTool(
@@ -142,9 +142,9 @@ export function createApplication(
     {
       description: "List configured logical log sources and field hints for investigation work.",
       inputSchema: discoverInputSchema,
-      outputSchema: discoverOutputSchema
+      outputSchema: discoverOutputSchema,
     },
-    async (input) => createDiscoverCallToolResult(discoverHandler(input))
+    async (input) => createDiscoverCallToolResult(discoverHandler(input)),
   );
 
   server.registerTool(
@@ -153,9 +153,9 @@ export function createApplication(
       description:
         "Run an exact-field filter when the field name is already known, bypassing alias resolution.",
       inputSchema: filterInputSchema,
-      outputSchema: filterOutputSchema
+      outputSchema: filterOutputSchema,
     },
-    async (input) => createFilterCallToolResult(await filterHandler(input))
+    async (input) => createFilterCallToolResult(await filterHandler(input)),
   );
 
   server.registerTool(
@@ -164,9 +164,9 @@ export function createApplication(
       description:
         "Query one or more logical log sources over an absolute time window with text, filters, and aggregate modes.",
       inputSchema: queryInputSchema,
-      outputSchema: queryOutputSchema
+      outputSchema: queryOutputSchema,
     },
-    async (input) => createQueryCallToolResult(await queryHandler(input))
+    async (input) => createQueryCallToolResult(await queryHandler(input)),
   );
 
   return {
@@ -176,7 +176,7 @@ export function createApplication(
       describe_fields: describeFieldsHandler,
       discover: discoverHandler,
       filter: filterHandler,
-      query: queryHandler
-    }
+      query: queryHandler,
+    },
   };
 }

@@ -11,11 +11,11 @@ const source: SourceDefinition = {
   timeField: "@timestamp",
   backend: {
     kind: "elasticsearch_search",
-    path: "/metrics/_search"
+    path: "/metrics/_search",
   },
   fieldHints: [],
   defaultTextFields: ["message"],
-  evidenceFields: ["request_id", "total_duration_ms"]
+  evidenceFields: ["request_id", "total_duration_ms"],
 };
 
 describe("query grouped_top_hits mode", () => {
@@ -29,9 +29,9 @@ describe("query grouped_top_hits mode", () => {
         group_by: "request_id",
         sort_by: "total_duration_ms",
         top_hits_size: 1,
-        limit: 5
+        limit: 5,
       },
-      [source]
+      [source],
     );
 
     expect(plan.sourceQueries[0]?.request.body).toMatchObject({
@@ -39,18 +39,18 @@ describe("query grouped_top_hits mode", () => {
         groups: {
           terms: {
             field: "request_id",
-            size: 5
+            size: 5,
           },
           aggs: {
             top_hits: {
               top_hits: {
                 size: 1,
-                sort: [{ total_duration_ms: { order: "desc" } }]
-              }
-            }
-          }
-        }
-      }
+                sort: [{ total_duration_ms: { order: "desc" } }],
+              },
+            },
+          },
+        },
+      },
     });
   });
 
@@ -64,9 +64,9 @@ describe("query grouped_top_hits mode", () => {
         group_by: "request_id",
         sort_by: "total_duration_ms",
         top_hits_size: 1,
-        limit: 5
+        limit: 5,
       },
-      [source]
+      [source],
     );
 
     const execution: KibanaSearchExecutionResult = {
@@ -88,17 +88,17 @@ describe("query grouped_top_hits mode", () => {
                           "@timestamp": "2026-04-02T12:01:00Z",
                           request_id: "req-1",
                           message: "reload stats",
-                          total_duration_ms: 400
-                        }
-                      }
-                    ]
-                  }
-                }
-              }
-            ]
-          }
-        }
-      }
+                          total_duration_ms: 400,
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
+            ],
+          },
+        },
+      },
     };
 
     const result = normalizeQueryResponse(plan, [execution]);

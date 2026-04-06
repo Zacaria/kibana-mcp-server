@@ -1,0 +1,21 @@
+---
+title: Compatibility Matrix
+status: active
+updated: 2026-04-06
+---
+
+# Compatibility Matrix
+
+This matrix distinguishes guaranteed support from best-effort behavior. Each claim includes an evidence basis so readers know what is tested vs inferred.
+
+| Area | Status | Evidence basis | Notes |
+| --- | --- | --- | --- |
+| Node.js 22+ runtime | Guaranteed | Verified in CI via `.node-version` | Required for build and runtime. |
+| Repo-local Codex plugin install | Guaranteed | Verified via `npm run verify` and entrypoint checks | Requires `npm install` + `npm run build`. |
+| `kibana_internal_search_es` backend | Guaranteed | Verified in tests | Primary search transport. |
+| `elasticsearch_search` backend | Guaranteed | Verified in tests | Direct Elasticsearch-compatible search path. |
+| Schema metadata endpoints | Best-effort | Known 404s in some deployments | `describe_fields` may fail if endpoints are blocked. |
+| Nested query features | Best-effort | Depends on schema availability | Requires schema metadata for validation. |
+| Public package install | Planned | Not yet verified | Enabled after artifact verification and release automation. |
+
+Upgrade a row from best-effort to guaranteed only after verifying it in CI or in a reproducible environment test and documenting the evidence here.

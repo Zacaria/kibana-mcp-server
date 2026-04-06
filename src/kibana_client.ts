@@ -4,7 +4,7 @@ import type {
   KibanaSearchExecutionResult,
   SourceDefinition,
   SourceFieldDescriptor,
-  SourceSchemaBackendConfig
+  SourceSchemaBackendConfig,
 } from "./types.js";
 
 const DEFAULT_META_FIELDS = ["_source", "_id", "_index", "_score"] as const;
@@ -12,7 +12,7 @@ const DEFAULT_META_FIELDS = ["_source", "_id", "_index", "_score"] as const;
 class KibanaHttpError extends Error {
   constructor(
     readonly status: number,
-    readonly responseBody: string
+    readonly responseBody: string,
   ) {
     super(`Kibana request failed with status ${status}: ${responseBody}`);
     this.name = "KibanaHttpError";
@@ -77,11 +77,10 @@ function normalizeFieldCapsResponse(raw: unknown): SourceFieldDescriptor[] {
       return {
         name,
         type: typeof fieldCaps.type === "string" ? fieldCaps.type : Object.keys(typeRecord)[0],
-        searchable:
-          typeof fieldCaps.searchable === "boolean" ? fieldCaps.searchable : undefined,
+        searchable: typeof fieldCaps.searchable === "boolean" ? fieldCaps.searchable : undefined,
         aggregatable:
           typeof fieldCaps.aggregatable === "boolean" ? fieldCaps.aggregatable : undefined,
-        subfields: []
+        subfields: [],
       };
     })
     .sort((left, right) => left.name.localeCompare(right.name));
@@ -112,7 +111,7 @@ function normalizeKibanaFieldsResponse(raw: unknown): SourceFieldDescriptor[] {
           typeof fieldRecord.aggregatable === "boolean" ? fieldRecord.aggregatable : undefined,
         nested_path: typeof nested.path === "string" ? nested.path : undefined,
         multi_field_parent: typeof multi.parent === "string" ? multi.parent : undefined,
-        subfields: []
+        subfields: [],
       };
     })
     .filter((field): field is SourceFieldDescriptor => field !== null)
@@ -121,13 +120,13 @@ function normalizeKibanaFieldsResponse(raw: unknown): SourceFieldDescriptor[] {
 
 function resolveSchemaIndexPatterns(
   source: SourceDefinition,
-  schemaBackend: SourceSchemaBackendConfig
+  schemaBackend: SourceSchemaBackendConfig,
 ): string {
   const schemaIndex = schemaBackend.index ?? source.backend.index;
 
   if (!schemaIndex) {
     throw new Error(
-      `Source '${source.id}' does not declare schema index patterns. Configure source.schema.index or backend.index.`
+      `Source '${source.id}' does not declare schema index patterns. Configure source.schema.index or backend.index.`,
     );
   }
 
@@ -141,7 +140,7 @@ function dedupePaths(paths: Array<string | undefined>): string[] {
 function resolveSchemaPaths(
   source: SourceDefinition,
   schemaBackend: SourceSchemaBackendConfig,
-  patterns: string
+  patterns: string,
 ): string[] {
   if (schemaBackend.kind === "elasticsearch_field_caps") {
     return [schemaBackend.path ?? `/${patterns}/_field_caps`];
@@ -152,7 +151,7 @@ function resolveSchemaPaths(
       schemaBackend.path,
       "/internal/data_views/_fields_for_wildcard",
       "/api/data_views/fields_for_wildcard",
-      "/api/index_patterns/_fields_for_wildcard"
+      "/api/index_patterns/_fields_for_wildcard",
     ]);
   }
 
@@ -160,7 +159,7 @@ function resolveSchemaPaths(
     schemaBackend.path,
     "/api/index_patterns/_fields_for_wildcard",
     "/internal/data_views/_fields_for_wildcard",
-    "/api/data_views/fields_for_wildcard"
+    "/api/data_views/fields_for_wildcard",
   ]);
 }
 
@@ -198,14 +197,14 @@ function inferPrimitiveFieldType(value: unknown, fieldName?: string): string | u
 
 function upsertFieldDescriptor(
   fieldMap: Map<string, SourceFieldDescriptor>,
-  field: SourceFieldDescriptor
+  field: SourceFieldDescriptor,
 ): void {
   const existing = fieldMap.get(field.name);
 
   if (!existing) {
     fieldMap.set(field.name, {
       ...field,
-      subfields: [...new Set(field.subfields)]
+      subfields: [...new Set(field.subfields)],
     });
     return;
   }
@@ -220,13 +219,13 @@ function upsertFieldDescriptor(
     object_array_path: existing.object_array_path ?? field.object_array_path,
     multi_field_parent: existing.multi_field_parent ?? field.multi_field_parent,
     preferred_exact_field: existing.preferred_exact_field ?? field.preferred_exact_field,
-    subfields: [...new Set([...(existing.subfields ?? []), ...(field.subfields ?? [])])]
+    subfields: [...new Set([...(existing.subfields ?? []), ...(field.subfields ?? [])])],
   });
 }
 
 function normalizeInferredNestedPath(
   nestedPath: string | undefined,
-  objectArrayPath: string | undefined
+  objectArrayPath: string | undefined,
 ): string | undefined {
   // Sampled hits cannot prove Elasticsearch nested mappings. Once a field is inferred under an
   // array-of-objects path, keep that shape explicit and never mark it as nested.
@@ -238,7 +237,7 @@ function collectFieldsFromSourceDocument(
   fieldMap: Map<string, SourceFieldDescriptor>,
   path?: string,
   nestedPath?: string,
-  objectArrayPath?: string
+  objectArrayPath?: string,
 ): void {
   if (value === null || value === undefined) {
     return;
@@ -247,36 +246,30 @@ function collectFieldsFromSourceDocument(
   if (Array.isArray(value)) {
     const objectValues = value.filter(
       (entry): entry is Record<string, unknown> =>
-        Boolean(entry) && typeof entry === "object" && !Array.isArray(entry)
+        Boolean(entry) && typeof entry === "object" && !Array.isArray(entry),
     );
 
     if (path && objectValues.length > 0) {
       for (const entry of objectValues) {
         for (const [key, childValue] of Object.entries(entry)) {
-          collectFieldsFromSourceDocument(
-            childValue,
-            fieldMap,
-            `${path}.${key}`,
-            undefined,
-            path
-          );
+          collectFieldsFromSourceDocument(childValue, fieldMap, `${path}.${key}`, undefined, path);
         }
       }
       return;
     }
 
     const primitiveSample = value.find(
-      (entry) => entry !== null && entry !== undefined && typeof entry !== "object"
+      (entry) => entry !== null && entry !== undefined && typeof entry !== "object",
     );
     if (path && primitiveSample !== undefined) {
       upsertFieldDescriptor(fieldMap, {
         name: path,
         type: inferPrimitiveFieldType(primitiveSample, path),
         searchable: true,
-        aggregatable: typeof primitiveSample === "string" ? false : true,
+        aggregatable: typeof primitiveSample !== "string",
         nested_path: normalizeInferredNestedPath(nestedPath, objectArrayPath),
         object_array_path: objectArrayPath,
-        subfields: []
+        subfields: [],
       });
     }
     return;
@@ -285,13 +278,7 @@ function collectFieldsFromSourceDocument(
   if (typeof value === "object") {
     for (const [key, childValue] of Object.entries(value as Record<string, unknown>)) {
       const childPath = path ? `${path}.${key}` : key;
-      collectFieldsFromSourceDocument(
-        childValue,
-        fieldMap,
-        childPath,
-        nestedPath,
-        objectArrayPath
-      );
+      collectFieldsFromSourceDocument(childValue, fieldMap, childPath, nestedPath, objectArrayPath);
     }
     return;
   }
@@ -304,16 +291,16 @@ function collectFieldsFromSourceDocument(
     name: path,
     type: inferPrimitiveFieldType(value, path),
     searchable: true,
-    aggregatable: typeof value === "string" ? false : true,
+    aggregatable: typeof value !== "string",
     nested_path: normalizeInferredNestedPath(nestedPath, objectArrayPath),
     object_array_path: objectArrayPath,
-    subfields: []
+    subfields: [],
   });
 }
 
 function collectFieldsFromSearchHit(
   hit: Record<string, unknown>,
-  fieldMap: Map<string, SourceFieldDescriptor>
+  fieldMap: Map<string, SourceFieldDescriptor>,
 ): void {
   collectFieldsFromSourceDocument(asRecord(hit._source), fieldMap);
 
@@ -331,9 +318,8 @@ function collectFieldsFromSearchHit(
       searchable: true,
       aggregatable: true,
       multi_field_parent: multiFieldParent,
-      preferred_exact_field:
-        inferredType === "keyword" && multiFieldParent ? fieldName : undefined,
-      subfields: []
+      preferred_exact_field: inferredType === "keyword" && multiFieldParent ? fieldName : undefined,
+      subfields: [],
     });
 
     if (inferredType === "keyword" && multiFieldParent) {
@@ -343,7 +329,7 @@ function collectFieldsFromSearchHit(
         searchable: true,
         aggregatable: false,
         preferred_exact_field: fieldName,
-        subfields: [fieldName]
+        subfields: [fieldName],
       });
     }
   }
@@ -370,7 +356,7 @@ export class KibanaClient {
       method?: "GET" | "POST";
       body?: unknown;
       headers?: Record<string, string>;
-    } = {}
+    } = {},
   ): Promise<unknown> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.config.timeoutMs);
@@ -382,9 +368,9 @@ export class KibanaClient {
         headers: {
           Authorization: `Basic ${encodeBasicAuth(this.config.username, this.config.password)}`,
           "Content-Type": "application/json",
-          ...options.headers
+          ...options.headers,
         },
-        ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) })
+        ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) }),
       });
 
       if (!response.ok) {
@@ -410,8 +396,8 @@ export class KibanaClient {
           ? {
               params: {
                 ...(source.backend.index ? { index: source.backend.index } : {}),
-                body: compiledQuery.request.body
-              }
+                body: compiledQuery.request.body,
+              },
             }
           : compiledQuery.request.body;
 
@@ -423,22 +409,22 @@ export class KibanaClient {
           "Content-Type": "application/json",
           ...(source.backend.kind === "kibana_internal_search_es"
             ? { "kbn-xsrf": "kibana-mcp-server" }
-            : {})
+            : {}),
         },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
         const errorBody = await response.text();
         throw new Error(
-          `Kibana request failed for source '${source.id}' with status ${response.status}: ${errorBody}`
+          `Kibana request failed for source '${source.id}' with status ${response.status}: ${errorBody}`,
         );
       }
 
       const responseJson = (await response.json()) as unknown;
       return {
         source,
-        rawResponse: unwrapSearchResponse(responseJson)
+        rawResponse: unwrapSearchResponse(responseJson),
       };
     } finally {
       clearTimeout(timeout);
@@ -449,7 +435,9 @@ export class KibanaClient {
     return Promise.all(sourceQueries.map((sourceQuery) => this.execute(sourceQuery)));
   }
 
-  private async describeFieldsViaSearchBackend(source: SourceDefinition): Promise<SourceFieldDescriptor[]> {
+  private async describeFieldsViaSearchBackend(
+    source: SourceDefinition,
+  ): Promise<SourceFieldDescriptor[]> {
     const endpoint = joinUrl(this.config.baseUrl, source.backend.path);
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.config.timeoutMs);
@@ -465,16 +453,16 @@ export class KibanaClient {
                   sort: [{ [source.timeField]: { order: "desc" } }],
                   fields: ["*"],
                   _source: true,
-                  track_total_hits: false
-                }
-              }
+                  track_total_hits: false,
+                },
+              },
             }
           : {
               size: 20,
               sort: [{ [source.timeField]: { order: "desc" } }],
               fields: ["*"],
               _source: true,
-              track_total_hits: false
+              track_total_hits: false,
             };
 
       const response = await fetch(endpoint, {
@@ -485,15 +473,15 @@ export class KibanaClient {
           "Content-Type": "application/json",
           ...(source.backend.kind === "kibana_internal_search_es"
             ? { "kbn-xsrf": "kibana-mcp-server" }
-            : {})
+            : {}),
         },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
         const errorBody = await response.text();
         throw new Error(
-          `Search transport fallback failed for source '${source.id}' with status ${response.status}: ${errorBody}`
+          `Search transport fallback failed for source '${source.id}' with status ${response.status}: ${errorBody}`,
         );
       }
 
@@ -503,7 +491,7 @@ export class KibanaClient {
 
       if (fields.length === 0) {
         throw new Error(
-          `Search transport fallback returned no fields for source '${source.id}'. Sample hits may be empty for the requested index pattern.`
+          `Search transport fallback returned no fields for source '${source.id}'. Sample hits may be empty for the requested index pattern.`,
         );
       }
 
@@ -518,7 +506,7 @@ export class KibanaClient {
 
     if (!schemaBackend) {
       throw new Error(
-        `Source '${source.id}' does not configure a schema backend. Add source.schema before using describe_fields or schema-dependent query features.`
+        `Source '${source.id}' does not configure a schema backend. Add source.schema before using describe_fields or schema-dependent query features.`,
       );
     }
 
@@ -530,7 +518,7 @@ export class KibanaClient {
 
       if (!schemaPath) {
         throw new Error(
-          `Schema backend '${schemaBackend.kind}' does not have a usable path for source '${source.id}'`
+          `Schema backend '${schemaBackend.kind}' does not have a usable path for source '${source.id}'`,
         );
       }
 
@@ -539,13 +527,13 @@ export class KibanaClient {
       let responseJson: unknown;
       try {
         responseJson = await this.requestJson(url, {
-          method: "GET"
+          method: "GET",
         });
       } catch (error) {
         throw new Error(
           `Schema backend '${schemaBackend.kind}' request failed for source '${source.id}' at '${schemaPath}': ${
             error instanceof Error ? error.message : String(error)
-          }`
+          }`,
         );
       }
       try {
@@ -554,7 +542,7 @@ export class KibanaClient {
         throw new Error(
           `Schema backend '${schemaBackend.kind}' returned an unexpected field capabilities payload for source '${source.id}': ${
             error instanceof Error ? error.message : String(error)
-          }`
+          }`,
         );
       }
     }
@@ -568,8 +556,8 @@ export class KibanaClient {
         const responseJson = await this.requestJson(url, {
           method: "GET",
           headers: {
-            "kbn-xsrf": "kibana-mcp-server"
-          }
+            "kbn-xsrf": "kibana-mcp-server",
+          },
         });
 
         try {
@@ -578,7 +566,7 @@ export class KibanaClient {
           throw new Error(
             `Schema backend '${schemaBackend.kind}' returned an unexpected Kibana field payload for source '${source.id}' from '${schemaPath}': ${
               error instanceof Error ? error.message : String(error)
-            }`
+            }`,
           );
         }
       } catch (error) {
@@ -590,7 +578,7 @@ export class KibanaClient {
         throw new Error(
           `Schema backend '${schemaBackend.kind}' request failed for source '${source.id}' at '${schemaPath}': ${
             error instanceof Error ? error.message : String(error)
-          }`
+          }`,
         );
       }
     }
@@ -599,7 +587,7 @@ export class KibanaClient {
       throw new Error(
         `Schema backend '${schemaBackend.kind}' returned 404 for source '${source.id}' on every known Kibana field-discovery path (${attempts.join(", ")}). Search transport fallback also failed: ${
           fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
-        }`
+        }`,
       );
     });
   }

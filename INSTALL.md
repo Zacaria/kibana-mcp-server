@@ -2,6 +2,8 @@
 
 Use this document when handing the repository to another Codex user or agent and you want setup to be as automatic as possible from a cloned checkout.
 
+This is the canonical install path today. Public package distribution is planned but not yet the default path (see `docs/project/distribution-strategy.md`).
+
 ## Full-Auto Prompt
 
 Replace the placeholders before sending:

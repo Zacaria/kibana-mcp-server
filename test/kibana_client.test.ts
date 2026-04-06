@@ -11,23 +11,23 @@ const source: SourceDefinition = {
   backend: {
     kind: "kibana_internal_search_es",
     path: "/internal/search/es",
-    index: "app-logs-*"
+    index: "app-logs-*",
   },
   schema: {
     kind: "kibana_data_views_fields",
     path: "/api/data_views/fields_for_wildcard",
-    index: "app-logs-*"
+    index: "app-logs-*",
   },
   fieldHints: [],
   defaultTextFields: ["message"],
-  evidenceFields: []
+  evidenceFields: [],
 };
 
 const config: AppConfig["kibana"] = {
   baseUrl: "https://kibana.example.com",
   username: "elastic",
   password: "secret",
-  timeoutMs: 1000
+  timeoutMs: 1000,
 };
 
 describe("KibanaClient", () => {
@@ -42,12 +42,12 @@ describe("KibanaClient", () => {
           rawResponse: {
             hits: {
               total: { value: 1 },
-              hits: []
-            }
-          }
+              hits: [],
+            },
+          },
         }),
-        { status: 200 }
-      )
+        { status: 200 },
+      ),
     );
 
     const client = new KibanaClient(config);
@@ -59,9 +59,9 @@ describe("KibanaClient", () => {
       advisories: [],
       request: {
         body: {
-          size: 0
-        }
-      }
+          size: 0,
+        },
+      },
     };
 
     const result = await client.execute(compiledQuery);
@@ -73,9 +73,9 @@ describe("KibanaClient", () => {
         method: "POST",
         headers: expect.objectContaining({
           "Content-Type": "application/json",
-          "kbn-xsrf": "kibana-mcp-server"
-        })
-      })
+          "kbn-xsrf": "kibana-mcp-server",
+        }),
+      }),
     );
   });
 
@@ -87,13 +87,13 @@ describe("KibanaClient", () => {
             rawResponse: {
               hits: {
                 total: { value: 2 },
-                hits: []
-              }
-            }
-          }
+                hits: [],
+              },
+            },
+          },
         }),
-        { status: 200 }
-      )
+        { status: 200 },
+      ),
     );
 
     const client = new KibanaClient(config);
@@ -103,7 +103,7 @@ describe("KibanaClient", () => {
       resolvedNestedFilters: [],
       resolvedSortBy: "@timestamp",
       advisories: [],
-      request: { body: { size: 0 } }
+      request: { body: { size: 0 } },
     });
 
     expect(result.rawResponse.hits).toBeDefined();
@@ -118,7 +118,7 @@ describe("KibanaClient", () => {
               name: "event",
               type: "text",
               searchable: true,
-              aggregatable: false
+              aggregatable: false,
             },
             {
               name: "event.keyword",
@@ -127,14 +127,14 @@ describe("KibanaClient", () => {
               aggregatable: true,
               subType: {
                 multi: {
-                  parent: "event"
-                }
-              }
-            }
-          ]
+                  parent: "event",
+                },
+              },
+            },
+          ],
         }),
-        { status: 200 }
-      )
+        { status: 200 },
+      ),
     );
 
     const client = new KibanaClient(config);
@@ -143,7 +143,7 @@ describe("KibanaClient", () => {
 
     expect(result.map((field) => field.name)).toEqual(["event", "event.keyword"]);
     expect(calledUrl.origin + calledUrl.pathname).toBe(
-      "https://kibana.example.com/api/data_views/fields_for_wildcard"
+      "https://kibana.example.com/api/data_views/fields_for_wildcard",
     );
     expect(calledUrl.searchParams.get("pattern")).toBe("app-logs-*");
     expect(calledUrl.searchParams.get("allow_no_index")).toBe("true");
@@ -151,16 +151,16 @@ describe("KibanaClient", () => {
       "_source",
       "_id",
       "_index",
-      "_score"
+      "_score",
     ]);
     expect(fetchSpy).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({
         method: "GET",
         headers: expect.objectContaining({
-          "kbn-xsrf": "kibana-mcp-server"
-        })
-      })
+          "kbn-xsrf": "kibana-mcp-server",
+        }),
+      }),
     );
   });
 
@@ -183,21 +183,21 @@ describe("KibanaClient", () => {
                       steps: [
                         {
                           name: "CACHE_REFRESH",
-                          duration_ms: 42
-                        }
-                      ]
+                          duration_ms: 42,
+                        },
+                      ],
                     },
                     fields: {
                       "event.keyword": ["CACHE_REFRESH_PHASES"],
-                      "@timestamp": ["2026-04-03T10:00:00.000Z"]
-                    }
-                  }
-                ]
-              }
-            }
+                      "@timestamp": ["2026-04-03T10:00:00.000Z"],
+                    },
+                  },
+                ],
+              },
+            },
           }),
-          { status: 200 }
-        )
+          { status: 200 },
+        ),
       );
 
     const client = new KibanaClient(config);
@@ -205,17 +205,15 @@ describe("KibanaClient", () => {
 
     expect(fetchSpy).toHaveBeenCalledTimes(4);
     expect(String(fetchSpy.mock.calls[3]?.[0])).toBe(
-      "https://kibana.example.com/internal/search/es"
+      "https://kibana.example.com/internal/search/es",
     );
     expect(result.find((field) => field.name === "event")?.preferred_exact_field).toBe(
-      "event.keyword"
+      "event.keyword",
     );
-    expect(result.find((field) => field.name === "steps.name")?.nested_path).toBe(
-      undefined
-    );
+    expect(result.find((field) => field.name === "steps.name")?.nested_path).toBe(undefined);
     expect(result.find((field) => field.name === "steps.name")?.object_array_path).toBe("steps");
     expect(result.find((field) => field.name === "steps.duration_ms")?.object_array_path).toBe(
-      "steps"
+      "steps",
     );
   });
 
@@ -225,8 +223,8 @@ describe("KibanaClient", () => {
     await expect(
       client.describeFields({
         ...source,
-        schema: undefined
-      })
+        schema: undefined,
+      }),
     ).rejects.toThrow("does not configure a schema backend");
   });
 });

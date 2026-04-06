@@ -21,8 +21,8 @@ export class SourceCatalog {
       time_field: source.timeField,
       field_hints: source.fieldHints.map((fieldHint) => ({
         ...fieldHint,
-        aliases: fieldHint.aliases ?? []
-      }))
+        aliases: fieldHint.aliases ?? [],
+      })),
     }));
   }
 
@@ -46,8 +46,8 @@ export class SourceCatalog {
       ...source.fieldHints.flatMap((fieldHint) => [
         fieldHint.name,
         fieldHint.description ?? "",
-        ...(fieldHint.aliases ?? [])
-      ])
+        ...(fieldHint.aliases ?? []),
+      ]),
     ];
 
     return haystacks.some((value) => value.toLowerCase().includes(query));

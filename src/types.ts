@@ -116,10 +116,7 @@ export interface ResolvedNestedQueryFilter extends NestedQueryFilter {
 }
 
 export interface FieldResolutionAdvisory {
-  kind:
-    | "preferred_exact_field"
-    | "schema_unavailable"
-    | "non_nested_object_array";
+  kind: "preferred_exact_field" | "schema_unavailable" | "non_nested_object_array";
   source_id: string;
   purpose: "filter" | "sort" | "group_by";
   requested_field: string;

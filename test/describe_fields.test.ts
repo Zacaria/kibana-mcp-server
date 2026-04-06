@@ -12,16 +12,16 @@ const source: SourceDefinition = {
   backend: {
     kind: "kibana_internal_search_es",
     path: "/internal/search/es",
-    index: "consumer-*"
+    index: "consumer-*",
   },
   fieldHints: [
     {
       name: "event",
-      aliases: ["event_name"]
-    }
+      aliases: ["event_name"],
+    },
   ],
   defaultTextFields: ["message"],
-  evidenceFields: ["event"]
+  evidenceFields: ["event"],
 };
 
 const fieldDescriptors: SourceFieldDescriptor[] = [
@@ -32,7 +32,7 @@ const fieldDescriptors: SourceFieldDescriptor[] = [
     aggregatable: false,
     subfields: ["event.keyword"],
     preferred_exact_field: "event.keyword",
-    aliases: ["event_name"]
+    aliases: ["event_name"],
   },
   {
     name: "event.keyword",
@@ -40,8 +40,8 @@ const fieldDescriptors: SourceFieldDescriptor[] = [
     searchable: true,
     aggregatable: true,
     multi_field_parent: "event",
-    subfields: []
-  }
+    subfields: [],
+  },
 ];
 
 describe("executeDescribeFields", () => {
@@ -49,14 +49,14 @@ describe("executeDescribeFields", () => {
     const result = await executeDescribeFields(
       {
         source_id: "reload-metrics",
-        limit: 20
+        limit: 20,
       },
       {
-        getRequiredSources: () => [source]
+        getRequiredSources: () => [source],
       } as never,
       new SchemaCatalog({
-        describeFields: async () => fieldDescriptors
-      })
+        describeFields: async () => fieldDescriptors,
+      }),
     );
 
     expect(result.source_id).toBe("reload-metrics");
@@ -69,14 +69,14 @@ describe("executeDescribeFields", () => {
       {
         source_id: "reload-metrics",
         query: "keyword",
-        limit: 20
+        limit: 20,
       },
       {
-        getRequiredSources: () => [source]
+        getRequiredSources: () => [source],
       } as never,
       new SchemaCatalog({
-        describeFields: async () => fieldDescriptors
-      })
+        describeFields: async () => fieldDescriptors,
+      }),
     );
 
     expect(result.total).toBe(2);

@@ -27,7 +27,9 @@ function linkFieldRelationships(fields: SourceFieldDescriptor[]): SourceFieldDes
   }
 
   return fields.map((field) => {
-    const subfields = [...new Set([...(field.subfields ?? []), ...(subfieldsByParent.get(field.name) ?? [])])];
+    const subfields = [
+      ...new Set([...(field.subfields ?? []), ...(subfieldsByParent.get(field.name) ?? [])]),
+    ];
     const keywordSubfield = subfields
       .map((subfieldName) => fieldMap.get(subfieldName))
       .find((candidate) => candidate?.type === "keyword" && candidate.aggregatable);
@@ -37,14 +39,14 @@ function linkFieldRelationships(fields: SourceFieldDescriptor[]): SourceFieldDes
       subfields,
       preferred_exact_field:
         field.preferred_exact_field ??
-        (field.type === "text" ? keywordSubfield?.name : field.preferred_exact_field)
+        (field.type === "text" ? keywordSubfield?.name : field.preferred_exact_field),
     };
   });
 }
 
 function mergeFieldHints(
   source: SourceDefinition,
-  fields: SourceFieldDescriptor[]
+  fields: SourceFieldDescriptor[],
 ): SourceFieldDescriptor[] {
   const byName = buildFieldMap(fields);
 
@@ -62,7 +64,7 @@ function mergeFieldHints(
       type: fieldHint.type,
       description: fieldHint.description,
       aliases: fieldHint.aliases ?? [],
-      subfields: []
+      subfields: [],
     });
   }
 
@@ -75,7 +77,7 @@ export class SchemaCatalog {
   constructor(
     private readonly client: {
       describeFields: (source: SourceDefinition) => Promise<SourceFieldDescriptor[]>;
-    }
+    },
   ) {}
 
   async getFields(source: SourceDefinition): Promise<SourceFieldDescriptor[]> {
@@ -94,7 +96,7 @@ export class SchemaCatalog {
   filterFields(
     fields: SourceFieldDescriptor[],
     query?: string,
-    limit = 100
+    limit = 100,
   ): SourceFieldDescriptor[] {
     const normalizedQuery = query ? normalizeFieldName(query) : undefined;
     const filtered = normalizedQuery
@@ -108,7 +110,7 @@ export class SchemaCatalog {
             field.multi_field_parent ?? "",
             field.preferred_exact_field ?? "",
             ...(field.aliases ?? []),
-            ...field.subfields
+            ...field.subfields,
           ];
 
           return haystacks.some((value) => normalizeFieldName(value).includes(normalizedQuery));

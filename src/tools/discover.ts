@@ -1,11 +1,11 @@
 import type { CallToolResult } from "@modelcontextprotocol/server";
 import { z } from "zod";
 
-import { SourceCatalog } from "../source_catalog.js";
+import type { SourceCatalog } from "../source_catalog.js";
 
 export const discoverInputSchema = z.object({
   query: z.string().trim().min(1).optional(),
-  limit: z.number().int().positive().max(100).default(20)
+  limit: z.number().int().positive().max(100).default(20),
 });
 
 export const discoverOutputSchema = z.object({
@@ -22,21 +22,21 @@ export const discoverOutputSchema = z.object({
           name: z.string(),
           type: z.string().optional(),
           description: z.string().optional(),
-          aliases: z.array(z.string())
-        })
-      )
-    })
-  )
+          aliases: z.array(z.string()),
+        }),
+      ),
+    }),
+  ),
 });
 
 export function executeDiscover(
   input: z.infer<typeof discoverInputSchema>,
-  sourceCatalog: SourceCatalog
+  sourceCatalog: SourceCatalog,
 ): z.infer<typeof discoverOutputSchema> {
   const sources = sourceCatalog.list(input.query, input.limit);
   return {
     total: sources.length,
-    sources
+    sources,
   };
 }
 
@@ -57,10 +57,10 @@ export function formatDiscoverResult(result: z.infer<typeof discoverOutputSchema
 }
 
 export function createDiscoverCallToolResult(
-  result: z.infer<typeof discoverOutputSchema>
+  result: z.infer<typeof discoverOutputSchema>,
 ): CallToolResult {
   return {
     content: [{ type: "text", text: formatDiscoverResult(result) }],
-    structuredContent: result
+    structuredContent: result,
   };
 }
