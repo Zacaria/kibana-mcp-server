@@ -13,6 +13,10 @@
   "bin": {
     "kibana-mcp-server": "dist/src/index.js"
   },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "files": [
     "dist/**",
     "plugins/kibana-log-investigation/.mcp.json",

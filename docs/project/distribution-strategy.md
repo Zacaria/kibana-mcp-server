@@ -34,6 +34,7 @@ The package surface is prepared for agent-friendly execution via:
 
 Public publishing remains gated until the following are complete:
 
+- npm package ownership is under maintainer control for the chosen package name
 - Verified `npm pack` contents (runtime entrypoint, plugin metadata, README, LICENSE).
 - CI and release workflows green on the supported Node line.
 - Clear support policy and compatibility matrix published.
@@ -63,6 +64,7 @@ Releases use semantic versioning. Changesets are the source of truth for release
 
 Move from repo-local only to public publishing when:
 
+- the repo has an npm package identity maintainers can actually control
 - at least one external adopter confirms successful installation without maintainer intervention
 - artifact verification passes on two consecutive release candidates
 - maintainer agrees to own the support posture defined in `docs/project/support-policy.md`
