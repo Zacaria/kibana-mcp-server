@@ -10,6 +10,9 @@
   },
   "type": "module",
   "main": "dist/src/index.js",
+  "bin": {
+    "kibana-mcp-server": "dist/src/index.js"
+  },
   "files": [
     "dist/**",
     "plugins/kibana-log-investigation/.mcp.json",
@@ -34,7 +37,7 @@
     "format:check": "biome check . --linter-enabled=false",
     "check": "npm run check:types && npm run lint && npm run format:check",
     "dev": "tsx src/index.ts",
-    "start": "node dist/index.js",
+    "start": "node dist/src/index.js",
     "test": "vitest run",
     "verify:packlist": "node scripts/verify-packlist.mjs",
     "verify:entrypoint": "node scripts/verify-mcp-entrypoint.mjs",

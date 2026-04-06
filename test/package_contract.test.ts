@@ -7,9 +7,16 @@ const repoRoot = process.cwd();
 describe("package contract", () => {
   it("publishes the intended artifact surface", () => {
     const pkgRaw = readFileSync(resolve(repoRoot, "package.json"), "utf8");
-    const pkg = JSON.parse(pkgRaw) as { files?: string[]; main?: string };
+    const pkg = JSON.parse(pkgRaw) as {
+      bin?: Record<string, string>;
+      files?: string[];
+      main?: string;
+      scripts?: Record<string, string>;
+    };
 
     expect(pkg.main).toBe("dist/src/index.js");
+    expect(pkg.bin?.["kibana-mcp-server"]).toBe("dist/src/index.js");
+    expect(pkg.scripts?.start).toBe("node dist/src/index.js");
     expect(pkg.files).toBeDefined();
     if (!pkg.files) {
       return;
