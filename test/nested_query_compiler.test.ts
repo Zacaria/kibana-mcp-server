@@ -11,11 +11,11 @@ const source: SourceDefinition = {
   backend: {
     kind: "kibana_internal_search_es",
     path: "/internal/search/es",
-    index: "workflow-*"
+    index: "workflow-*",
   },
   fieldHints: [],
   defaultTextFields: ["message"],
-  evidenceFields: ["trace_id", "job_id"]
+  evidenceFields: ["trace_id", "job_id"],
 };
 
 const sourceSchema: SourceFieldDescriptor[] = [
@@ -26,7 +26,7 @@ const sourceSchema: SourceFieldDescriptor[] = [
     aggregatable: false,
     nested_path: "steps",
     subfields: ["steps.name.keyword"],
-    preferred_exact_field: "steps.name.keyword"
+    preferred_exact_field: "steps.name.keyword",
   },
   {
     name: "steps.name.keyword",
@@ -35,8 +35,8 @@ const sourceSchema: SourceFieldDescriptor[] = [
     aggregatable: true,
     multi_field_parent: "steps.name",
     nested_path: "steps",
-    subfields: []
-  }
+    subfields: [],
+  },
 ];
 
 const objectArraySchema: SourceFieldDescriptor[] = [
@@ -47,7 +47,7 @@ const objectArraySchema: SourceFieldDescriptor[] = [
     aggregatable: false,
     object_array_path: "steps",
     subfields: ["steps.name.keyword"],
-    preferred_exact_field: "steps.name.keyword"
+    preferred_exact_field: "steps.name.keyword",
   },
   {
     name: "steps.name.keyword",
@@ -56,7 +56,7 @@ const objectArraySchema: SourceFieldDescriptor[] = [
     aggregatable: true,
     multi_field_parent: "steps.name",
     object_array_path: "steps",
-    subfields: []
+    subfields: [],
   },
   {
     name: "steps.duration_ms",
@@ -64,8 +64,8 @@ const objectArraySchema: SourceFieldDescriptor[] = [
     searchable: true,
     aggregatable: true,
     object_array_path: "steps",
-    subfields: []
-  }
+    subfields: [],
+  },
 ];
 
 describe("compileQueryPlan nested filters", () => {
@@ -80,22 +80,22 @@ describe("compileQueryPlan nested filters", () => {
           {
             path: "steps",
             field: "name",
-            value: "CACHE_REFRESH"
-          }
+            value: "CACHE_REFRESH",
+          },
         ],
         extract_nested: true,
-        limit: 10
+        limit: 10,
       },
       [source],
       {
-        sourceSchemas: new Map([["workflow-metrics", sourceSchema]])
-      }
+        sourceSchemas: new Map([["workflow-metrics", sourceSchema]]),
+      },
     );
 
     expect(plan.sourceQueries[0]?.resolvedNestedFilters[0]).toMatchObject({
       path: "steps",
       field: "name",
-      resolved_field: "steps.name.keyword"
+      resolved_field: "steps.name.keyword",
     });
     expect(plan.sourceQueries[0]?.request.body).toMatchObject({
       query: {
@@ -110,20 +110,20 @@ describe("compileQueryPlan nested filters", () => {
                     must: [
                       {
                         term: {
-                          "steps.name.keyword": "CACHE_REFRESH"
-                        }
-                      }
-                    ]
-                  }
+                          "steps.name.keyword": "CACHE_REFRESH",
+                        },
+                      },
+                    ],
+                  },
                 },
                 inner_hits: {
-                  name: "steps"
-                }
-              }
-            }
-          ]
-        }
-      }
+                  name: "steps",
+                },
+              },
+            },
+          ],
+        },
+      },
     });
   });
 
@@ -139,17 +139,19 @@ describe("compileQueryPlan nested filters", () => {
             {
               path: "steps",
               field: "name",
-              value: "CACHE_REFRESH"
-            }
+              value: "CACHE_REFRESH",
+            },
           ],
           extract_nested: true,
-          limit: 10
+          limit: 10,
         },
         [source],
         {
-          sourceSchemaErrors: new Map([["reload-metrics", "schema backend returned 404 Not Found"]])
-        }
-      )
+          sourceSchemaErrors: new Map([
+            ["reload-metrics", "schema backend returned 404 Not Found"],
+          ]),
+        },
+      ),
     ).toThrow("Nested filters require schema metadata");
   });
 
@@ -164,26 +166,26 @@ describe("compileQueryPlan nested filters", () => {
           {
             path: "steps",
             field: "name",
-            value: "CACHE_REFRESH"
-          }
+            value: "CACHE_REFRESH",
+          },
         ],
         extract_nested: false,
-        limit: 10
+        limit: 10,
       },
       [source],
       {
-        sourceSchemas: new Map([["workflow-metrics", objectArraySchema]])
-      }
+        sourceSchemas: new Map([["workflow-metrics", objectArraySchema]]),
+      },
     );
 
     expect(plan.sourceQueries[0]?.resolvedNestedFilters[0]).toMatchObject({
       path: "steps",
       field: "name",
       resolved_field: "steps.name.keyword",
-      query_strategy: "flat_object_path"
+      query_strategy: "flat_object_path",
     });
     expect(plan.sourceQueries[0]?.advisories.map((advisory) => advisory.kind)).toContain(
-      "non_nested_object_array"
+      "non_nested_object_array",
     );
     expect(plan.sourceQueries[0]?.request.body).toMatchObject({
       query: {
@@ -192,12 +194,12 @@ describe("compileQueryPlan nested filters", () => {
             {},
             {
               term: {
-                "steps.name.keyword": "CACHE_REFRESH"
-              }
-            }
-          ]
-        }
-      }
+                "steps.name.keyword": "CACHE_REFRESH",
+              },
+            },
+          ],
+        },
+      },
     });
   });
 
@@ -213,22 +215,22 @@ describe("compileQueryPlan nested filters", () => {
             {
               path: "steps",
               field: "name",
-              value: "CACHE_REFRESH"
+              value: "CACHE_REFRESH",
             },
             {
               path: "steps",
               field: "duration_ms",
-              value: 42
-            }
+              value: 42,
+            },
           ],
           extract_nested: false,
-          limit: 10
+          limit: 10,
         },
         [source],
         {
-          sourceSchemas: new Map([["workflow-metrics", objectArraySchema]])
-        }
-      )
+          sourceSchemas: new Map([["workflow-metrics", objectArraySchema]]),
+        },
+      ),
     ).toThrow(/array of objects.*multiple nested_filters/i);
   });
 });

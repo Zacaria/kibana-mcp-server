@@ -10,11 +10,11 @@ const source: SourceDefinition = {
   timeField: "@timestamp",
   backend: {
     kind: "elasticsearch_search",
-    path: "/app-logs/_search"
+    path: "/app-logs/_search",
   },
   fieldHints: [],
   defaultTextFields: ["message"],
-  evidenceFields: ["traceId"]
+  evidenceFields: ["traceId"],
 };
 
 describe("normalizeQueryResponse", () => {
@@ -30,15 +30,13 @@ describe("normalizeQueryResponse", () => {
       sourceQueries: [
         {
           source,
-          resolvedFilters: [
-            { field: "traceId", resolved_field: "traceId", value: "trace-123" }
-          ],
+          resolvedFilters: [{ field: "traceId", resolved_field: "traceId", value: "trace-123" }],
           resolvedNestedFilters: [],
           resolvedSortBy: "duration_ms",
           advisories: [],
-          request: { body: {} }
-        }
-      ]
+          request: { body: {} },
+        },
+      ],
     };
 
     const execution: KibanaSearchExecutionResult = {
@@ -54,12 +52,12 @@ describe("normalizeQueryResponse", () => {
                 "@timestamp": "2026-04-02T12:01:00Z",
                 message: "workflow completed",
                 traceId: "trace-123",
-                duration_ms: 42
-              }
-            }
-          ]
-        }
-      }
+                duration_ms: 42,
+              },
+            },
+          ],
+        },
+      },
     };
 
     const result = normalizeQueryResponse(plan, [execution]);
@@ -86,9 +84,9 @@ describe("normalizeQueryResponse", () => {
           resolvedNestedFilters: [],
           resolvedSortBy: "@timestamp",
           advisories: [],
-          request: { body: {} }
-        }
-      ]
+          request: { body: {} },
+        },
+      ],
     };
 
     const result = normalizeQueryResponse(plan, [
@@ -97,13 +95,11 @@ describe("normalizeQueryResponse", () => {
         rawResponse: {
           aggregations: {
             groups: {
-              buckets: [
-                { key: "CACHE_REFRESH", doc_count: 2 }
-              ]
-            }
-          }
-        }
-      }
+              buckets: [{ key: "CACHE_REFRESH", doc_count: 2 }],
+            },
+          },
+        },
+      },
     ]);
     expect(result.groups?.[0]?.buckets[0]?.key).toBe("CACHE_REFRESH");
   });
@@ -112,7 +108,7 @@ describe("normalizeQueryResponse", () => {
     const apiSource: SourceDefinition = {
       ...source,
       id: "api",
-      name: "API logs"
+      name: "API logs",
     };
 
     const plan: QueryPlan = {
@@ -130,7 +126,7 @@ describe("normalizeQueryResponse", () => {
           resolvedNestedFilters: [],
           resolvedSortBy: "total_duration_ms",
           advisories: [],
-          request: { body: {} }
+          request: { body: {} },
         },
         {
           source: apiSource,
@@ -138,9 +134,9 @@ describe("normalizeQueryResponse", () => {
           resolvedNestedFilters: [],
           resolvedSortBy: "total_duration_ms",
           advisories: [],
-          request: { body: {} }
-        }
-      ]
+          request: { body: {} },
+        },
+      ],
     };
 
     const result = normalizeQueryResponse(plan, [
@@ -156,8 +152,8 @@ describe("normalizeQueryResponse", () => {
                 _source: {
                   "@timestamp": "2026-04-02T12:01:00Z",
                   message: "application slow",
-                  total_duration_ms: 200
-                }
+                  total_duration_ms: 200,
+                },
               },
               {
                 _id: "app-2",
@@ -165,12 +161,12 @@ describe("normalizeQueryResponse", () => {
                 _source: {
                   "@timestamp": "2026-04-02T12:02:00Z",
                   message: "application medium",
-                  total_duration_ms: 150
-                }
-              }
-            ]
-          }
-        }
+                  total_duration_ms: 150,
+                },
+              },
+            ],
+          },
+        },
       },
       {
         source: apiSource,
@@ -184,13 +180,13 @@ describe("normalizeQueryResponse", () => {
                 _source: {
                   "@timestamp": "2026-04-02T12:03:00Z",
                   message: "api slowest",
-                  total_duration_ms: 300
-                }
-              }
-            ]
-          }
-        }
-      }
+                  total_duration_ms: 300,
+                },
+              },
+            ],
+          },
+        },
+      },
     ]);
 
     expect(result.hits?.map((hit) => hit.document_id)).toEqual(["api-1", "app-1"]);
@@ -213,9 +209,9 @@ describe("normalizeQueryResponse", () => {
           resolvedNestedFilters: [],
           resolvedSortBy: "duration_ms",
           advisories: [],
-          request: { body: {} }
-        }
-      ]
+          request: { body: {} },
+        },
+      ],
     };
 
     const result = normalizeQueryResponse(plan, [
@@ -232,13 +228,13 @@ describe("normalizeQueryResponse", () => {
                 _source: {
                   "@timestamp": "2026-04-02T12:01:00Z",
                   message: "workflow completed",
-                  duration_ms: 42
-                }
-              }
-            ]
-          }
-        }
-      }
+                  duration_ms: 42,
+                },
+              },
+            ],
+          },
+        },
+      },
     ]);
 
     expect(result.next_cursor).toBeDefined();

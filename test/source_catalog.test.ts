@@ -12,16 +12,16 @@ const sources: SourceDefinition[] = [
     timeField: "@timestamp",
     backend: {
       kind: "elasticsearch_search",
-      path: "/consumer/_search"
+      path: "/consumer/_search",
     },
     fieldHints: [
       {
         name: "productId",
-        aliases: ["product_id"]
-      }
+        aliases: ["product_id"],
+      },
     ],
     defaultTextFields: ["message"],
-    evidenceFields: ["productId"]
+    evidenceFields: ["productId"],
   },
   {
     id: "api",
@@ -30,12 +30,12 @@ const sources: SourceDefinition[] = [
     timeField: "@timestamp",
     backend: {
       kind: "elasticsearch_search",
-      path: "/api/_search"
+      path: "/api/_search",
     },
     fieldHints: [],
     defaultTextFields: ["message"],
-    evidenceFields: []
-  }
+    evidenceFields: [],
+  },
 ];
 
 describe("SourceCatalog", () => {

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { SchemaCatalog } from "../src/schema_catalog.js";
-import { executeFilter, filterInputSchema } from "../src/tools/filter.js";
 import { SourceCatalog } from "../src/source_catalog.js";
+import { executeFilter, filterInputSchema } from "../src/tools/filter.js";
 import type { SourceDefinition, SourceFieldDescriptor } from "../src/types.js";
 
 const source: SourceDefinition = {
@@ -12,16 +12,16 @@ const source: SourceDefinition = {
   timeField: "@timestamp",
   backend: {
     kind: "elasticsearch_search",
-    path: "/app-logs/_search"
+    path: "/app-logs/_search",
   },
   fieldHints: [
     {
       name: "traceId",
-      aliases: ["trace_id"]
-    }
+      aliases: ["trace_id"],
+    },
   ],
   defaultTextFields: ["message"],
-  evidenceFields: ["traceId"]
+  evidenceFields: ["traceId"],
 };
 
 const sourceSchema: SourceFieldDescriptor[] = [
@@ -31,7 +31,7 @@ const sourceSchema: SourceFieldDescriptor[] = [
     searchable: true,
     aggregatable: false,
     subfields: ["event.keyword"],
-    preferred_exact_field: "event.keyword"
+    preferred_exact_field: "event.keyword",
   },
   {
     name: "event.keyword",
@@ -39,8 +39,8 @@ const sourceSchema: SourceFieldDescriptor[] = [
     searchable: true,
     aggregatable: true,
     multi_field_parent: "event",
-    subfields: []
-  }
+    subfields: [],
+  },
 ];
 
 describe("executeFilter", () => {
@@ -60,7 +60,7 @@ describe("executeFilter", () => {
         filters: [],
         nested_filters: [],
         extract_nested: false,
-        top_hits_size: 1
+        top_hits_size: 1,
       },
       new SourceCatalog([source]),
       {
@@ -72,28 +72,28 @@ describe("executeFilter", () => {
               rawResponse: {
                 hits: {
                   total: { value: 0 },
-                  hits: []
-                }
-              }
-            }
+                  hits: [],
+                },
+              },
+            },
           ];
-        }
-      }
+        },
+      },
     );
 
     expect(result.total).toBe(0);
     expect(result.query_echo.filters[0]?.resolved_field).toBe("trace_id");
     expect(result.query_echo.sort_by).toBe("total_duration_ms");
     expect(result.query_echo.resolved_sort_by_by_source?.[0]?.resolved_sort_by).toBe(
-      "total_duration_ms"
+      "total_duration_ms",
     );
     expect(capturedBody).toMatchObject({
       query: {
         bool: {
-          must: [{}, { term: { trace_id: "trace-123" } }]
-        }
+          must: [{}, { term: { trace_id: "trace-123" } }],
+        },
       },
-      sort: [{ total_duration_ms: { order: "desc" } }]
+      sort: [{ total_duration_ms: { order: "desc" } }],
     });
   });
 
@@ -112,8 +112,8 @@ describe("executeFilter", () => {
         filters: [],
         nested_filters: [],
         extract_nested: false,
-        top_hits_size: 1
-      })
+        top_hits_size: 1,
+      }),
     ).toThrow("sort_by is only supported when mode is 'hits' or 'grouped_top_hits'");
   });
 
@@ -132,7 +132,7 @@ describe("executeFilter", () => {
         filters: [],
         nested_filters: [],
         extract_nested: false,
-        top_hits_size: 1
+        top_hits_size: 1,
       },
       new SourceCatalog([source]),
       {
@@ -144,18 +144,18 @@ describe("executeFilter", () => {
               rawResponse: {
                 hits: {
                   total: { value: 0 },
-                  hits: []
-                }
-              }
-            }
+                  hits: [],
+                },
+              },
+            },
           ];
-        }
+        },
       },
       {
         schemaCatalog: new SchemaCatalog({
-          describeFields: async () => sourceSchema
-        })
-      }
+          describeFields: async () => sourceSchema,
+        }),
+      },
     );
 
     expect(result.query_echo.filters[0]?.resolved_field).toBe("event.keyword");
@@ -163,9 +163,9 @@ describe("executeFilter", () => {
     expect(capturedBody).toMatchObject({
       query: {
         bool: {
-          must: [{}, { term: { "event.keyword": "CACHE_REFRESH_PHASES" } }]
-        }
-      }
+          must: [{}, { term: { "event.keyword": "CACHE_REFRESH_PHASES" } }],
+        },
+      },
     });
   });
 });

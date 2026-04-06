@@ -18,6 +18,21 @@ It is designed as a general-purpose log investigation MCP for environments where
 - A Kibana-compatible read endpoint reachable with basic auth
 - A source catalog JSON file describing the logical log sources to expose
 
+## Project Status
+
+This repo targets external adoption and AI-agent usability. It is safe for real investigations, but the install and release posture is still evolving.
+
+- Guaranteed: repo-local Codex plugin install (see `INSTALL.md`)
+- Planned: public package distribution after artifact verification and release automation are in place
+- Support posture and compatibility details live in `docs/project/support-policy.md`
+- Contributing and security reporting live in `CONTRIBUTING.md` and `SECURITY.md`
+
+## Support and Releases
+
+- Distribution strategy: `docs/project/distribution-strategy.md`
+- Compatibility matrix: `docs/project/compatibility-matrix.md`
+- Release checklist: `docs/project/release-checklist.md`
+
 ## Installation
 
 ```bash
@@ -378,6 +393,9 @@ If schema metadata is available and you pass a logical text field such as `event
 ## Development
 
 ```bash
+npm run lint
+npm run format:check
+npm run check:types
 npm test
-npm run check
+npm run verify
 ```

@@ -1,21 +1,21 @@
 import type { CallToolResult } from "@modelcontextprotocol/server";
 import { z } from "zod";
 
-import { KibanaClient } from "../kibana_client.js";
+import type { KibanaClient } from "../kibana_client.js";
 import { compileQueryPlan } from "../query/compiler.js";
 import { normalizeQueryResponse } from "../query/normalize.js";
-import { SchemaCatalog } from "../schema_catalog.js";
-import { SourceCatalog } from "../source_catalog.js";
+import type { SchemaCatalog } from "../schema_catalog.js";
+import type { SourceCatalog } from "../source_catalog.js";
 
 const queryFilterSchema = z.object({
   field: z.string().min(1),
-  value: z.union([z.string(), z.number(), z.boolean()])
+  value: z.union([z.string(), z.number(), z.boolean()]),
 });
 
 const nestedQueryFilterSchema = z.object({
   path: z.string().min(1),
   field: z.string().min(1),
-  value: z.union([z.string(), z.number(), z.boolean()])
+  value: z.union([z.string(), z.number(), z.boolean()]),
 });
 
 export const queryInputSchema = z
@@ -37,14 +37,14 @@ export const queryInputSchema = z
     stats_field: z.string().min(1).optional(),
     top_hits_size: z.number().int().positive().max(100).default(1),
     histogram_interval: z.string().min(1).optional(),
-    group_by: z.string().min(1).optional()
+    group_by: z.string().min(1).optional(),
   })
   .superRefine((value, ctx) => {
     if (Date.parse(value.start_time) >= Date.parse(value.end_time)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["end_time"],
-        message: "end_time must be later than start_time"
+        message: "end_time must be later than start_time",
       });
     }
 
@@ -52,7 +52,7 @@ export const queryInputSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["histogram_interval"],
-        message: "histogram_interval is required when mode is 'histogram'"
+        message: "histogram_interval is required when mode is 'histogram'",
       });
     }
 
@@ -60,7 +60,7 @@ export const queryInputSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["group_by"],
-        message: `group_by is required when mode is '${value.mode}'`
+        message: `group_by is required when mode is '${value.mode}'`,
       });
     }
 
@@ -68,7 +68,7 @@ export const queryInputSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["sort_by"],
-        message: "sort_by is only supported when mode is 'hits' or 'grouped_top_hits'"
+        message: "sort_by is only supported when mode is 'hits' or 'grouped_top_hits'",
       });
     }
 
@@ -76,7 +76,7 @@ export const queryInputSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["cursor"],
-        message: "cursor is only supported when mode is 'hits'"
+        message: "cursor is only supported when mode is 'hits'",
       });
     }
 
@@ -84,7 +84,7 @@ export const queryInputSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["cursor"],
-        message: "cursor pagination is only supported for single-source hits queries"
+        message: "cursor pagination is only supported for single-source hits queries",
       });
     }
 
@@ -92,7 +92,7 @@ export const queryInputSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["stats_field"],
-        message: "stats_field is required when mode is 'stats'"
+        message: "stats_field is required when mode is 'stats'",
       });
     }
 
@@ -100,7 +100,7 @@ export const queryInputSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["sort_by"],
-        message: "sort_by is required when mode is 'grouped_top_hits'"
+        message: "sort_by is required when mode is 'grouped_top_hits'",
       });
     }
   });
@@ -115,8 +115,8 @@ export const queryOutputSchema = z.object({
       z.object({
         field: z.string(),
         value: z.union([z.string(), z.number(), z.boolean()]),
-        resolved_field: z.string()
-      })
+        resolved_field: z.string(),
+      }),
     ),
     nested_filters: z
       .array(
@@ -125,8 +125,8 @@ export const queryOutputSchema = z.object({
           field: z.string(),
           value: z.union([z.string(), z.number(), z.boolean()]),
           resolved_field: z.string(),
-          query_strategy: z.enum(["nested", "flat_object_path"]).optional()
-        })
+          query_strategy: z.enum(["nested", "flat_object_path"]).optional(),
+        }),
       )
       .optional(),
     cursor: z.string().optional(),
@@ -137,24 +137,20 @@ export const queryOutputSchema = z.object({
       .array(
         z.object({
           source_id: z.string(),
-          resolved_sort_by: z.string()
-        })
+          resolved_sort_by: z.string(),
+        }),
       )
       .optional(),
     advisories: z
       .array(
         z.object({
-          kind: z.enum([
-            "preferred_exact_field",
-            "schema_unavailable",
-            "non_nested_object_array"
-          ]),
+          kind: z.enum(["preferred_exact_field", "schema_unavailable", "non_nested_object_array"]),
           source_id: z.string(),
           purpose: z.enum(["filter", "sort", "group_by"]),
           requested_field: z.string(),
           resolved_field: z.string(),
-          reason: z.string()
-        })
+          reason: z.string(),
+        }),
       )
       .optional(),
     limit: z.number(),
@@ -162,7 +158,7 @@ export const queryOutputSchema = z.object({
     top_hits_size: z.number().optional(),
     histogram_interval: z.string().optional(),
     group_by: z.string().optional(),
-    truncated: z.boolean()
+    truncated: z.boolean(),
   }),
   total: z.number(),
   next_cursor: z.string().optional(),
@@ -179,20 +175,20 @@ export const queryOutputSchema = z.object({
           .array(
             z.object({
               path: z.string(),
-              documents: z.array(z.record(z.string(), z.unknown()))
-            })
+              documents: z.array(z.record(z.string(), z.unknown())),
+            }),
           )
           .optional(),
-        raw_document: z.record(z.string(), z.unknown())
-      })
+        raw_document: z.record(z.string(), z.unknown()),
+      }),
     )
     .optional(),
   counts_by_source: z
     .array(
       z.object({
         source_id: z.string(),
-        count: z.number()
-      })
+        count: z.number(),
+      }),
     )
     .optional(),
   histograms: z
@@ -203,10 +199,10 @@ export const queryOutputSchema = z.object({
           z.object({
             key: z.union([z.number(), z.string()]),
             key_as_string: z.string().optional(),
-            count: z.number()
-          })
-        )
-      })
+            count: z.number(),
+          }),
+        ),
+      }),
     )
     .optional(),
   groups: z
@@ -217,10 +213,10 @@ export const queryOutputSchema = z.object({
         buckets: z.array(
           z.object({
             key: z.string(),
-            count: z.number()
-          })
-        )
-      })
+            count: z.number(),
+          }),
+        ),
+      }),
     )
     .optional(),
   stats: z
@@ -236,9 +232,9 @@ export const queryOutputSchema = z.object({
           sum: z.number(),
           p50: z.number().nullable(),
           p95: z.number().nullable(),
-          p99: z.number().nullable()
-        })
-      })
+          p99: z.number().nullable(),
+        }),
+      }),
     )
     .optional(),
   grouped_hits: z
@@ -262,18 +258,18 @@ export const queryOutputSchema = z.object({
                   .array(
                     z.object({
                       path: z.string(),
-                      documents: z.array(z.record(z.string(), z.unknown()))
-                    })
+                      documents: z.array(z.record(z.string(), z.unknown())),
+                    }),
                   )
                   .optional(),
-                raw_document: z.record(z.string(), z.unknown())
-              })
-            )
-          })
-        )
-      })
+                raw_document: z.record(z.string(), z.unknown()),
+              }),
+            ),
+          }),
+        ),
+      }),
     )
-    .optional()
+    .optional(),
 });
 
 export async function executeQuery(
@@ -284,15 +280,14 @@ export async function executeQuery(
     resolveFieldAliases?: boolean;
     resolvePreferredExactFields?: boolean;
     schemaCatalog?: SchemaCatalog;
-  }
+  },
 ): Promise<z.infer<typeof queryOutputSchema>> {
   const sources = sourceCatalog.getRequiredSources(input.source_ids);
   const schemaCatalog = options?.schemaCatalog;
   const usesSchemaAwareFieldResolution =
     (options?.resolveFieldAliases !== false || options?.resolvePreferredExactFields !== false) &&
     (input.filters.length > 0 || Boolean(input.sort_by) || Boolean(input.group_by));
-  const needsSchemaResolution =
-    usesSchemaAwareFieldResolution || input.nested_filters.length > 0;
+  const needsSchemaResolution = usesSchemaAwareFieldResolution || input.nested_filters.length > 0;
   const sourceSchemas = new Map<string, Awaited<ReturnType<SchemaCatalog["getFields"]>>>();
   const sourceSchemaErrors = new Map<string, string>();
 
@@ -301,10 +296,7 @@ export async function executeQuery(
       try {
         sourceSchemas.set(source.id, await schemaCatalog.getFields(source));
       } catch (error) {
-        sourceSchemaErrors.set(
-          source.id,
-          error instanceof Error ? error.message : String(error)
-        );
+        sourceSchemaErrors.set(source.id, error instanceof Error ? error.message : String(error));
       }
     }
   }
@@ -312,7 +304,7 @@ export async function executeQuery(
   const plan = compileQueryPlan(input, sources, {
     ...options,
     ...(sourceSchemas.size > 0 ? { sourceSchemas } : {}),
-    ...(sourceSchemaErrors.size > 0 ? { sourceSchemaErrors } : {})
+    ...(sourceSchemaErrors.size > 0 ? { sourceSchemaErrors } : {}),
   });
   const executions = await kibanaClient.executeMany(plan.sourceQueries);
   return queryOutputSchema.parse(normalizeQueryResponse(plan, executions));
@@ -328,9 +320,7 @@ export function formatQueryResult(result: z.infer<typeof queryOutputSchema>): st
   }
 
   if (result.counts_by_source) {
-    return result.counts_by_source
-      .map((count) => `${count.source_id}: ${count.count}`)
-      .join("\n");
+    return result.counts_by_source.map((count) => `${count.source_id}: ${count.count}`).join("\n");
   }
 
   if (result.histograms) {
@@ -357,10 +347,10 @@ export function formatQueryResult(result: z.infer<typeof queryOutputSchema>): st
 }
 
 export function createQueryCallToolResult(
-  result: z.infer<typeof queryOutputSchema>
+  result: z.infer<typeof queryOutputSchema>,
 ): CallToolResult {
   return {
     content: [{ type: "text", text: formatQueryResult(result) }],
-    structuredContent: result
+    structuredContent: result,
   };
 }

@@ -8,8 +8,8 @@ import type {
   QuerySort,
   ResolvedNestedQueryFilter,
   ResolvedQueryFilter,
+  SourceDefinition,
   SourceFieldDescriptor,
-  SourceDefinition
 } from "../types.js";
 import { decodeQueryCursor } from "./cursor.js";
 
@@ -22,7 +22,7 @@ interface CompileQueryOptions {
 
 function findFieldDescriptor(
   fields: SourceFieldDescriptor[],
-  requestedField: string
+  requestedField: string,
 ): SourceFieldDescriptor | undefined {
   const normalized = requestedField.toLowerCase();
   return fields.find((field) => field.name.toLowerCase() === normalized);
@@ -31,7 +31,7 @@ function findFieldDescriptor(
 function resolveRequestedFieldAlias(
   source: SourceDefinition,
   requestedField: string,
-  options: CompileQueryOptions
+  options: CompileQueryOptions,
 ): string {
   if (options.resolveFieldAliases === false) {
     return requestedField;
@@ -41,7 +41,7 @@ function resolveRequestedFieldAlias(
   const exactMatch = source.fieldHints.find(
     (fieldHint) =>
       fieldHint.name.toLowerCase() === normalized ||
-      (fieldHint.aliases ?? []).some((alias) => alias.toLowerCase() === normalized)
+      (fieldHint.aliases ?? []).some((alias) => alias.toLowerCase() === normalized),
   );
 
   return exactMatch?.name ?? requestedField;
@@ -51,7 +51,7 @@ function resolveFieldName(
   source: SourceDefinition,
   requestedField: string,
   purpose: FieldResolutionAdvisory["purpose"],
-  options: CompileQueryOptions
+  options: CompileQueryOptions,
 ): { resolvedField: string; advisory?: FieldResolutionAdvisory } {
   const aliasResolvedField = resolveRequestedFieldAlias(source, requestedField, options);
   const sourceSchema = options.sourceSchemas?.get(source.id);
@@ -72,8 +72,8 @@ function resolveFieldName(
           purpose,
           requested_field: requestedField,
           resolved_field: aliasResolvedField,
-          reason: `Schema-backed exact-field resolution is unavailable for source '${source.id}': ${schemaError}`
-        }
+          reason: `Schema-backed exact-field resolution is unavailable for source '${source.id}': ${schemaError}`,
+        },
       };
     }
 
@@ -95,8 +95,8 @@ function resolveFieldName(
         purpose,
         requested_field: requestedField,
         resolved_field: preferredExactField,
-        reason: `Resolved ${aliasResolvedField} to its preferred exact field for ${purpose}`
-      }
+        reason: `Resolved ${aliasResolvedField} to its preferred exact field for ${purpose}`,
+      },
     };
   }
 
@@ -106,7 +106,7 @@ function resolveFieldName(
 function compileFilters(
   source: SourceDefinition,
   filters: QueryFilter[],
-  options: CompileQueryOptions
+  options: CompileQueryOptions,
 ): {
   resolvedFilters: ResolvedQueryFilter[];
   advisories: FieldResolutionAdvisory[];
@@ -118,7 +118,7 @@ function compileFilters(
     const { resolvedField, advisory } = resolveFieldName(source, filter.field, "filter", options);
     resolvedFilters.push({
       ...filter,
-      resolved_field: resolvedField
+      resolved_field: resolvedField,
     });
     if (advisory) {
       advisories.push(advisory);
@@ -131,7 +131,7 @@ function compileFilters(
 function resolveNestedFieldName(
   source: SourceDefinition,
   nestedFilter: NestedQueryFilter,
-  options: CompileQueryOptions
+  options: CompileQueryOptions,
 ): { resolvedField: string; advisory?: FieldResolutionAdvisory } {
   const requestedField = nestedFilter.field.startsWith(`${nestedFilter.path}.`)
     ? nestedFilter.field
@@ -140,10 +140,7 @@ function resolveNestedFieldName(
   return resolveFieldName(source, requestedField, "filter", options);
 }
 
-function getNestedChildFields(
-  sourceSchema: SourceFieldDescriptor[],
-  nestedPath: string
-): string[] {
+function getNestedChildFields(sourceSchema: SourceFieldDescriptor[], nestedPath: string): string[] {
   return sourceSchema
     .map((field) => field.name)
     .filter((fieldName) => fieldName.startsWith(`${nestedPath}.`))
@@ -164,7 +161,7 @@ function isFieldWithinPath(fieldName: string, path: string): boolean {
 
 function describeNonNestedPathKind(
   sourceSchema: SourceFieldDescriptor[],
-  path: string
+  path: string,
 ): "object_array" | "object_like" | null {
   const fieldsWithinPath = sourceSchema.filter((field) => isFieldWithinPath(field.name, path));
 
@@ -181,7 +178,7 @@ function describeNonNestedPathKind(
 
 function supportsFlatObjectPathTermFallback(
   descriptor: SourceFieldDescriptor | undefined,
-  resolvedField: string
+  resolvedField: string,
 ): boolean {
   if (!descriptor) {
     return false;
@@ -198,7 +195,7 @@ function buildNonNestedPathError(
   source: SourceDefinition,
   path: string,
   pathKind: "object_array" | "object_like",
-  reason: string
+  reason: string,
 ): Error {
   const pathDescription =
     pathKind === "object_array"
@@ -206,7 +203,7 @@ function buildNonNestedPathError(
       : "a non-nested object path with child fields";
 
   return new Error(
-    `Path '${path}' for source '${source.id}' is ${pathDescription}, not a true nested mapping. ${reason}`
+    `Path '${path}' for source '${source.id}' is ${pathDescription}, not a true nested mapping. ${reason}`,
   );
 }
 
@@ -214,7 +211,7 @@ function compileNestedFilters(
   source: SourceDefinition,
   nestedFilters: NestedQueryFilter[],
   options: CompileQueryOptions,
-  request: Pick<QueryRequest, "extract_nested">
+  request: Pick<QueryRequest, "extract_nested">,
 ): {
   resolvedNestedFilters: ResolvedNestedQueryFilter[];
   advisories: FieldResolutionAdvisory[];
@@ -232,7 +229,7 @@ function compileNestedFilters(
       options.sourceSchemaErrors?.get(source.id) ??
       "schema metadata is unavailable for this source";
     throw new Error(
-      `Nested filters require schema metadata for source '${source.id}': ${schemaError}`
+      `Nested filters require schema metadata for source '${source.id}': ${schemaError}`,
     );
   }
 
@@ -250,9 +247,7 @@ function compileNestedFilters(
       : describeNonNestedPathKind(sourceSchema, path);
 
     if (!nestedPathExists && !nonNestedPathKind) {
-      throw new Error(
-        `Nested path '${path}' is not known as nested for source '${source.id}'`
-      );
+      throw new Error(`Nested path '${path}' is not known as nested for source '${source.id}'`);
     }
 
     if (!nestedPathExists && request.extract_nested) {
@@ -260,7 +255,7 @@ function compileNestedFilters(
         source,
         path,
         nonNestedPathKind ?? "object_like",
-        "inner_hits are only available for fields mapped as nested, so extract_nested cannot be used here."
+        "inner_hits are only available for fields mapped as nested, so extract_nested cannot be used here.",
       );
     }
 
@@ -269,7 +264,7 @@ function compileNestedFilters(
         source,
         path,
         nonNestedPathKind ?? "object_like",
-        "Multiple nested_filters on the same path are unsafe because Elasticsearch flattens non-nested object values and may match conditions across different objects. Remap the path as nested if you need same-object matching."
+        "Multiple nested_filters on the same path are unsafe because Elasticsearch flattens non-nested object values and may match conditions across different objects. Remap the path as nested if you need same-object matching.",
       );
     }
 
@@ -278,12 +273,12 @@ function compileNestedFilters(
         ? nestedFilter.field
         : `${path}.${nestedFilter.field}`;
       const nestedFieldExists = sourceSchema.some((field) =>
-        isFieldWithinPath(field.name, requestedField)
+        isFieldWithinPath(field.name, requestedField),
       );
 
       if (!nestedFieldExists) {
         throw new Error(
-          `Nested field '${nestedFilter.field}' was not found under path '${path}' for source '${source.id}'`
+          `Nested field '${nestedFilter.field}' was not found under path '${path}' for source '${source.id}'`,
         );
       }
 
@@ -296,7 +291,7 @@ function compileNestedFilters(
             source,
             path,
             nonNestedPathKind ?? "object_like",
-            `Field '${resolvedField}' does not resolve to an exact-match field, so a plain term-query fallback would not be predictable. Use a keyword/exact field or remap the path as nested.`
+            `Field '${resolvedField}' does not resolve to an exact-match field, so a plain term-query fallback would not be predictable. Use a keyword/exact field or remap the path as nested.`,
           );
         }
 
@@ -308,21 +303,21 @@ function compileNestedFilters(
           resolved_field: resolvedField,
           reason:
             `Nested path '${path}' is represented by child fields (${formatFieldList(
-              getNestedChildFields(sourceSchema, path)
+              getNestedChildFields(sourceSchema, path),
             )}) but is not mapped as nested for source '${source.id}'. ` +
             `Applied a flat term filter on '${resolvedField}' instead of a nested query. ` +
             `This can match any object in the array and cannot return inner_hits${
               request.extract_nested
                 ? "; requested extract_nested could not be honored without nested mapping"
                 : ""
-            }.`
+            }.`,
         });
       }
 
       resolvedNestedFilters.push({
         ...nestedFilter,
         resolved_field: resolvedField,
-        query_strategy: nestedPathExists ? "nested" : "flat_object_path"
+        query_strategy: nestedPathExists ? "nested" : "flat_object_path",
       });
       if (advisory) {
         advisories.push(advisory);
@@ -338,7 +333,14 @@ function buildElasticBody(
   request: Required<Pick<QueryRequest, "start_time" | "end_time">> &
     Pick<
       QueryRequest,
-      "text" | "group_by" | "histogram_interval" | "sort_by" | "extract_nested" | "cursor" | "stats_field" | "top_hits_size"
+      | "text"
+      | "group_by"
+      | "histogram_interval"
+      | "sort_by"
+      | "extract_nested"
+      | "cursor"
+      | "stats_field"
+      | "top_hits_size"
     > & {
       mode: NonNullable<QueryRequest["mode"]>;
       sort: QuerySort;
@@ -347,33 +349,33 @@ function buildElasticBody(
   resolvedFilters: ResolvedQueryFilter[],
   resolvedNestedFilters: ResolvedNestedQueryFilter[],
   resolvedSortBy: string,
-  options: CompileQueryOptions
+  options: CompileQueryOptions,
 ): Record<string, unknown> {
   const must: Record<string, unknown>[] = [
     {
       range: {
         [source.timeField]: {
           gte: request.start_time,
-          lte: request.end_time
-        }
-      }
-    }
+          lte: request.end_time,
+        },
+      },
+    },
   ];
 
   if (request.text) {
     must.push({
       simple_query_string: {
         query: request.text,
-        ...(source.defaultTextFields.length > 0 ? { fields: source.defaultTextFields } : {})
-      }
+        ...(source.defaultTextFields.length > 0 ? { fields: source.defaultTextFields } : {}),
+      },
     });
   }
 
   for (const filter of resolvedFilters) {
     must.push({
       term: {
-        [filter.resolved_field]: filter.value
-      }
+        [filter.resolved_field]: filter.value,
+      },
     });
   }
 
@@ -383,8 +385,8 @@ function buildElasticBody(
       if (nestedFilter.query_strategy === "flat_object_path") {
         must.push({
           term: {
-            [nestedFilter.resolved_field]: nestedFilter.value
-          }
+            [nestedFilter.resolved_field]: nestedFilter.value,
+          },
         });
         continue;
       }
@@ -402,29 +404,29 @@ function buildElasticBody(
             bool: {
               must: nestedFilters.map((nestedFilter) => ({
                 term: {
-                  [nestedFilter.resolved_field]: nestedFilter.value
-                }
-              }))
-            }
+                  [nestedFilter.resolved_field]: nestedFilter.value,
+                },
+              })),
+            },
           },
           ...(request.extract_nested
             ? {
                 inner_hits: {
                   name: path,
-                  size: request.limit
-                }
+                  size: request.limit,
+                },
               }
-            : {})
-        }
+            : {}),
+        },
       });
     }
   }
 
   const baseBody: Record<string, unknown> = {
     query: {
-      bool: { must }
+      bool: { must },
     },
-    track_total_hits: true
+    track_total_hits: true,
   };
 
   if (request.mode === "hits") {
@@ -433,14 +435,14 @@ function buildElasticBody(
       ...baseBody,
       size: request.limit,
       sort: [{ [resolvedSortBy]: { order: request.sort } }],
-      ...(cursor ? { search_after: cursor.values } : {})
+      ...(cursor ? { search_after: cursor.values } : {}),
     };
   }
 
   if (request.mode === "count") {
     return {
       ...baseBody,
-      size: 0
+      size: 0,
     };
   }
 
@@ -452,10 +454,10 @@ function buildElasticBody(
         histogram: {
           date_histogram: {
             field: source.timeField,
-            fixed_interval: request.histogram_interval ?? "1m"
-          }
-        }
-      }
+            fixed_interval: request.histogram_interval ?? "1m",
+          },
+        },
+      },
     };
   }
 
@@ -474,23 +476,23 @@ function buildElasticBody(
           groups: {
             terms: {
               field: resolveFieldName(source, request.group_by, "group_by", options).resolvedField,
-              size: request.limit
+              size: request.limit,
             },
             aggs: {
               stats_summary: {
                 stats: {
-                  field: statsField
-                }
+                  field: statsField,
+                },
               },
               stats_percentiles: {
                 percentiles: {
                   field: statsField,
-                  percents: [50, 95, 99]
-                }
-              }
-            }
-          }
-        }
+                  percents: [50, 95, 99],
+                },
+              },
+            },
+          },
+        },
       };
     }
 
@@ -500,16 +502,16 @@ function buildElasticBody(
       aggs: {
         stats_summary: {
           stats: {
-            field: statsField
-          }
+            field: statsField,
+          },
         },
         stats_percentiles: {
           percentiles: {
             field: statsField,
-            percents: [50, 95, 99]
-          }
-        }
-      }
+            percents: [50, 95, 99],
+          },
+        },
+      },
     };
   }
 
@@ -525,18 +527,18 @@ function buildElasticBody(
         groups: {
           terms: {
             field: resolveFieldName(source, request.group_by, "group_by", options).resolvedField,
-            size: request.limit
+            size: request.limit,
           },
           aggs: {
             top_hits: {
               top_hits: {
                 size: request.top_hits_size ?? 1,
-                sort: [{ [resolvedSortBy]: { order: request.sort } }]
-              }
-            }
-          }
-        }
-      }
+                sort: [{ [resolvedSortBy]: { order: request.sort } }],
+              },
+            },
+          },
+        },
+      },
     };
   }
 
@@ -551,28 +553,32 @@ function buildElasticBody(
       groups: {
         terms: {
           field: resolveFieldName(source, request.group_by, "group_by", options).resolvedField,
-          size: request.limit
-        }
-      }
-    }
+          size: request.limit,
+        },
+      },
+    },
   };
 }
 
 function compileSourceQuery(
   source: SourceDefinition,
-  request: QueryRequest & { mode: NonNullable<QueryRequest["mode"]>; sort: QuerySort; limit: number },
-  options: CompileQueryOptions
+  request: QueryRequest & {
+    mode: NonNullable<QueryRequest["mode"]>;
+    sort: QuerySort;
+    limit: number;
+  },
+  options: CompileQueryOptions,
 ): CompiledSourceQuery {
   const { resolvedFilters, advisories } = compileFilters(source, request.filters ?? [], options);
   const nestedCompilation = compileNestedFilters(source, request.nested_filters ?? [], options, {
-    extract_nested: request.extract_nested
+    extract_nested: request.extract_nested,
   });
   advisories.push(...nestedCompilation.advisories);
   const sortResolution = resolveFieldName(
     source,
     request.sort_by ?? source.timeField,
     "sort",
-    options
+    options,
   );
   const resolvedSortBy = sortResolution.resolvedField;
 
@@ -593,28 +599,32 @@ function compileSourceQuery(
         resolvedFilters,
         nestedCompilation.resolvedNestedFilters,
         resolvedSortBy,
-        options
-      )
-    }
+        options,
+      ),
+    },
   };
 }
 
 export function compileQueryPlan(
   request: QueryRequest,
   sources: SourceDefinition[],
-  options: CompileQueryOptions = {}
+  options: CompileQueryOptions = {},
 ): QueryPlan {
   const mode = request.mode ?? "hits";
   const sort = request.sort ?? "desc";
   const limit = request.limit ?? (mode === "count" ? 1 : 100);
 
   const sourceQueries = sources.map((source) =>
-    compileSourceQuery(source, {
-      ...request,
-      mode,
-      sort,
-      limit
-    }, options)
+    compileSourceQuery(
+      source,
+      {
+        ...request,
+        mode,
+        sort,
+        limit,
+      },
+      options,
+    ),
   );
 
   return {
@@ -632,6 +642,6 @@ export function compileQueryPlan(
     histogramInterval: request.histogram_interval,
     groupBy: request.group_by,
     sourceIds: sources.map((source) => source.id),
-    sourceQueries
+    sourceQueries,
   };
 }

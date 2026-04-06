@@ -8,7 +8,7 @@ const config: AppConfig = {
     baseUrl: "https://kibana.example.com",
     username: "elastic",
     password: "secret",
-    timeoutMs: 1000
+    timeoutMs: 1000,
   },
   sources: [
     {
@@ -18,13 +18,13 @@ const config: AppConfig = {
       timeField: "@timestamp",
       backend: {
         kind: "elasticsearch_search",
-        path: "/consumer/_search"
+        path: "/consumer/_search",
       },
       fieldHints: [],
       defaultTextFields: ["message"],
-      evidenceFields: []
-    }
-  ]
+      evidenceFields: [],
+    },
+  ],
 };
 
 describe("createApplication", () => {
@@ -32,8 +32,8 @@ describe("createApplication", () => {
     const application = createApplication(config, {
       kibanaClient: {
         executeMany: async () => [],
-        describeFields: async () => []
-      } as never
+        describeFields: async () => [],
+      } as never,
     });
 
     expect(Object.keys(application.handlers).sort()).toEqual([
@@ -41,7 +41,7 @@ describe("createApplication", () => {
       "describe_fields",
       "discover",
       "filter",
-      "query"
+      "query",
     ]);
   });
 
@@ -54,13 +54,13 @@ describe("createApplication", () => {
             rawResponse: {
               hits: {
                 total: { value: 0 },
-                hits: []
-              }
-            }
-          }
+                hits: [],
+              },
+            },
+          },
         ],
-        describeFields: async () => []
-      } as never
+        describeFields: async () => [],
+      } as never,
     });
 
     const result = await application.handlers.query({
@@ -69,7 +69,7 @@ describe("createApplication", () => {
       end_time: "2026-04-02T12:05:00Z",
       mode: "hits",
       sort_by: "duration_ms",
-      limit: 10
+      limit: 10,
     });
 
     expect(result.total).toBe(0);
@@ -87,35 +87,34 @@ describe("createApplication", () => {
           timeField: "@timestamp",
           backend: {
             kind: "elasticsearch_search" as const,
-            path: "/consumer/_search"
+            path: "/consumer/_search",
           },
           fieldHints: [],
           defaultTextFields: ["message"],
-          evidenceFields: []
+          evidenceFields: [],
         },
         rawResponse: {
           hits: {
             total: { value: 0 },
-            hits: []
-          }
-        }
-      }
+            hits: [],
+          },
+        },
+      },
     ];
     const describeFields = async () => [];
 
-    let persistedCatalogPath: string | undefined;
     const application = createApplication(undefined, {
       kibanaClientFactory: () =>
         ({
           executeMany,
-          describeFields
-        }) as never
+          describeFields,
+        }) as never,
     });
 
     expect(() =>
       application.handlers.discover({
-        limit: 10
-      })
+        limit: 10,
+      }),
     ).toThrow("Server is not configured");
 
     const configureResult = await application.handlers.configure({
@@ -123,18 +122,18 @@ describe("createApplication", () => {
         baseUrl: "https://kibana.example.com",
         username: "elastic",
         password: "secret",
-        timeoutMs: 1000
+        timeoutMs: 1000,
       },
-      sources: config.sources
+      sources: config.sources,
     });
 
     expect(configureResult.source_count).toBe(1);
     expect(configureResult.persisted).toBe(true);
-    persistedCatalogPath = configureResult.source_catalog_path;
+    const persistedCatalogPath = configureResult.source_catalog_path;
     expect(persistedCatalogPath).toContain("config/sources.runtime.json");
 
     const discoverResult = application.handlers.discover({
-      limit: 10
+      limit: 10,
     });
     expect(discoverResult.total).toBe(1);
 
@@ -143,7 +142,7 @@ describe("createApplication", () => {
       start_time: "2026-04-02T12:00:00Z",
       end_time: "2026-04-02T12:05:00Z",
       mode: "hits",
-      limit: 10
+      limit: 10,
     });
 
     expect(queryResult.total).toBe(0);
@@ -155,7 +154,7 @@ describe("createApplication", () => {
       field: "productId",
       value: "123",
       mode: "hits",
-      sort_by: "total_duration_ms"
+      sort_by: "total_duration_ms",
     });
 
     expect(filterResult.total).toBe(0);
@@ -163,7 +162,7 @@ describe("createApplication", () => {
 
     const describeFieldsResult = await application.handlers.describe_fields({
       source_id: "consumer",
-      limit: 20
+      limit: 20,
     });
 
     expect(describeFieldsResult.source_id).toBe("consumer");

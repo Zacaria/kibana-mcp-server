@@ -11,17 +11,17 @@ const source: SourceDefinition = {
   backend: {
     kind: "kibana_internal_search_es",
     path: "/internal/search/es",
-    index: "consumer-*"
+    index: "consumer-*",
   },
   fieldHints: [
     {
       name: "event",
       aliases: ["event_name"],
-      description: "Logical event marker"
-    }
+      description: "Logical event marker",
+    },
   ],
   defaultTextFields: ["message"],
-  evidenceFields: ["event"]
+  evidenceFields: ["event"],
 };
 
 const fieldDescriptors: SourceFieldDescriptor[] = [
@@ -31,7 +31,7 @@ const fieldDescriptors: SourceFieldDescriptor[] = [
     searchable: true,
     aggregatable: false,
     subfields: ["event.keyword"],
-    preferred_exact_field: "event.keyword"
+    preferred_exact_field: "event.keyword",
   },
   {
     name: "event.keyword",
@@ -39,7 +39,7 @@ const fieldDescriptors: SourceFieldDescriptor[] = [
     searchable: true,
     aggregatable: true,
     multi_field_parent: "event",
-    subfields: []
+    subfields: [],
   },
   {
     name: "slowest_layers.layer",
@@ -47,14 +47,14 @@ const fieldDescriptors: SourceFieldDescriptor[] = [
     searchable: true,
     aggregatable: true,
     nested_path: "slowest_layers",
-    subfields: []
-  }
+    subfields: [],
+  },
 ];
 
 describe("SchemaCatalog", () => {
   it("merges field hints with backend field metadata", async () => {
     const catalog = new SchemaCatalog({
-      describeFields: async () => fieldDescriptors
+      describeFields: async () => fieldDescriptors,
     });
 
     const result = await catalog.getFields(source);
@@ -70,7 +70,7 @@ describe("SchemaCatalog", () => {
       describeFields: async () => {
         callCount += 1;
         return fieldDescriptors;
-      }
+      },
     });
 
     await catalog.getFields(source);

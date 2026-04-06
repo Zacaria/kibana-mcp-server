@@ -24,30 +24,30 @@ const envSchema = z.object({
       }
       return numericValue;
     }),
-  KIBANA_SOURCE_CATALOG_PATH: z.string().optional()
+  KIBANA_SOURCE_CATALOG_PATH: z.string().optional(),
 });
 
 const fieldHintSchema = z.object({
   name: z.string().min(1),
   type: z.string().optional(),
   description: z.string().optional(),
-  aliases: z.array(z.string().min(1)).default([])
+  aliases: z.array(z.string().min(1)).default([]),
 });
 
 const sourceBackendSchema = z.object({
   kind: z.enum(["elasticsearch_search", "kibana_internal_search_es"]),
   path: z.string().min(1),
-  index: z.union([z.string().min(1), z.array(z.string().min(1)).min(1)]).optional()
+  index: z.union([z.string().min(1), z.array(z.string().min(1)).min(1)]).optional(),
 });
 
 const sourceSchemaBackendSchema = z.object({
   kind: z.enum([
     "elasticsearch_field_caps",
     "kibana_data_views_fields",
-    "kibana_index_patterns_fields"
+    "kibana_index_patterns_fields",
   ]),
   path: z.string().min(1).optional(),
-  index: z.union([z.string().min(1), z.array(z.string().min(1)).min(1)]).optional()
+  index: z.union([z.string().min(1), z.array(z.string().min(1)).min(1)]).optional(),
 });
 
 export const sourceDefinitionSchema = z.object({
@@ -60,11 +60,11 @@ export const sourceDefinitionSchema = z.object({
   schema: sourceSchemaBackendSchema.optional(),
   fieldHints: z.array(fieldHintSchema).default([]),
   defaultTextFields: z.array(z.string().min(1)).default([]),
-  evidenceFields: z.array(z.string().min(1)).default([])
+  evidenceFields: z.array(z.string().min(1)).default([]),
 });
 
 export const sourceCatalogSchema = z.object({
-  sources: z.array(sourceDefinitionSchema).min(1)
+  sources: z.array(sourceDefinitionSchema).min(1),
 });
 
 export function resolveSourceCatalogPath(envInput: NodeJS.ProcessEnv = process.env): string {
@@ -85,14 +85,14 @@ export function parseAppConfig(envInput: unknown, sourceCatalogInput: unknown): 
       baseUrl: env.KIBANA_BASE_URL.replace(/\/+$/, ""),
       username: env.KIBANA_USERNAME,
       password: env.KIBANA_PASSWORD,
-      timeoutMs: env.KIBANA_TIMEOUT_MS ?? 10000
+      timeoutMs: env.KIBANA_TIMEOUT_MS ?? 10000,
     },
-    sources: sourceCatalog.sources
+    sources: sourceCatalog.sources,
   };
 }
 
 export async function loadConfigFromEnvironment(
-  envInput: NodeJS.ProcessEnv = process.env
+  envInput: NodeJS.ProcessEnv = process.env,
 ): Promise<AppConfig> {
   const env = envSchema.parse(envInput);
   const preferredPath = resolveSourceCatalogPath(envInput);
@@ -123,14 +123,10 @@ export async function loadConfigFromEnvironment(
 
 export async function persistSourceCatalog(
   sources: AppConfig["sources"],
-  envInput: NodeJS.ProcessEnv = process.env
+  envInput: NodeJS.ProcessEnv = process.env,
 ): Promise<string> {
   const sourceCatalogPath = resolveSourceCatalogPath(envInput);
   await mkdir(dirname(sourceCatalogPath), { recursive: true });
-  await writeFile(
-    sourceCatalogPath,
-    `${JSON.stringify({ sources }, null, 2)}\n`,
-    "utf8"
-  );
+  await writeFile(sourceCatalogPath, `${JSON.stringify({ sources }, null, 2)}\n`, "utf8");
   return sourceCatalogPath;
 }

@@ -10,11 +10,11 @@ const source: SourceDefinition = {
   timeField: "@timestamp",
   backend: {
     kind: "elasticsearch_search",
-    path: "/metrics/_search"
+    path: "/metrics/_search",
   },
   fieldHints: [],
   defaultTextFields: ["message"],
-  evidenceFields: ["trace_id", "job_id"]
+  evidenceFields: ["trace_id", "job_id"],
 };
 
 describe("normalizeQueryResponse nested matches", () => {
@@ -35,14 +35,14 @@ describe("normalizeQueryResponse nested matches", () => {
               path: "steps",
               field: "name",
               resolved_field: "steps.name.keyword",
-              value: "CACHE_REFRESH"
-            }
+              value: "CACHE_REFRESH",
+            },
           ],
           resolvedSortBy: "@timestamp",
           advisories: [],
-          request: { body: {} }
-        }
-      ]
+          request: { body: {} },
+        },
+      ],
     };
 
     const execution: KibanaSearchExecutionResult = {
@@ -58,7 +58,7 @@ describe("normalizeQueryResponse nested matches", () => {
                 "@timestamp": "2026-04-02T12:01:00Z",
                 trace_id: "trace-1",
                 job_id: "job-1",
-                message: "workflow stats"
+                message: "workflow stats",
               },
               inner_hits: {
                 steps: {
@@ -68,17 +68,17 @@ describe("normalizeQueryResponse nested matches", () => {
                         _source: {
                           name: "CACHE_REFRESH",
                           duration_ms: 1234,
-                          keys_scanned: 0
-                        }
-                      }
-                    ]
-                  }
-                }
-              }
-            }
-          ]
-        }
-      }
+                          keys_scanned: 0,
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
+            },
+          ],
+        },
+      },
     };
 
     const result = normalizeQueryResponse(plan, [execution]);
@@ -86,7 +86,7 @@ describe("normalizeQueryResponse nested matches", () => {
     expect(result.hits?.[0]?.nested_matches?.[0]?.path).toBe("steps");
     expect(result.hits?.[0]?.nested_matches?.[0]?.documents[0]).toMatchObject({
       name: "CACHE_REFRESH",
-      duration_ms: 1234
+      duration_ms: 1234,
     });
   });
 });

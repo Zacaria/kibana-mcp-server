@@ -4,9 +4,7 @@ import { loadConfigFromEnvironment } from "./config.js";
 import { createApplication } from "./server.js";
 
 function hasBootstrapConfig(env: NodeJS.ProcessEnv): boolean {
-  return Boolean(
-    env.KIBANA_BASE_URL && env.KIBANA_USERNAME && env.KIBANA_PASSWORD
-  );
+  return Boolean(env.KIBANA_BASE_URL && env.KIBANA_USERNAME && env.KIBANA_PASSWORD);
 }
 
 async function main(): Promise<void> {

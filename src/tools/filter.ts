@@ -1,20 +1,20 @@
 import type { CallToolResult } from "@modelcontextprotocol/server";
 import { z } from "zod";
 
-import { KibanaClient } from "../kibana_client.js";
-import { SchemaCatalog } from "../schema_catalog.js";
-import { SourceCatalog } from "../source_catalog.js";
+import type { KibanaClient } from "../kibana_client.js";
+import type { SchemaCatalog } from "../schema_catalog.js";
+import type { SourceCatalog } from "../source_catalog.js";
 import { executeQuery, queryOutputSchema } from "./query.js";
 
 const exactFilterSchema = z.object({
   field: z.string().min(1),
-  value: z.union([z.string(), z.number(), z.boolean()])
+  value: z.union([z.string(), z.number(), z.boolean()]),
 });
 
 const nestedExactFilterSchema = z.object({
   path: z.string().min(1),
   field: z.string().min(1),
-  value: z.union([z.string(), z.number(), z.boolean()])
+  value: z.union([z.string(), z.number(), z.boolean()]),
 });
 
 export const filterInputSchema = z
@@ -37,14 +37,14 @@ export const filterInputSchema = z
     stats_field: z.string().min(1).optional(),
     top_hits_size: z.number().int().positive().max(100).default(1),
     histogram_interval: z.string().min(1).optional(),
-    group_by: z.string().min(1).optional()
+    group_by: z.string().min(1).optional(),
   })
   .superRefine((value, ctx) => {
     if (Date.parse(value.start_time) >= Date.parse(value.end_time)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["end_time"],
-        message: "end_time must be later than start_time"
+        message: "end_time must be later than start_time",
       });
     }
 
@@ -52,7 +52,7 @@ export const filterInputSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["histogram_interval"],
-        message: "histogram_interval is required when mode is 'histogram'"
+        message: "histogram_interval is required when mode is 'histogram'",
       });
     }
 
@@ -60,7 +60,7 @@ export const filterInputSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["group_by"],
-        message: `group_by is required when mode is '${value.mode}'`
+        message: `group_by is required when mode is '${value.mode}'`,
       });
     }
 
@@ -68,7 +68,7 @@ export const filterInputSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["sort_by"],
-        message: "sort_by is only supported when mode is 'hits' or 'grouped_top_hits'"
+        message: "sort_by is only supported when mode is 'hits' or 'grouped_top_hits'",
       });
     }
 
@@ -76,7 +76,7 @@ export const filterInputSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["cursor"],
-        message: "cursor is only supported when mode is 'hits'"
+        message: "cursor is only supported when mode is 'hits'",
       });
     }
 
@@ -84,7 +84,7 @@ export const filterInputSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["cursor"],
-        message: "cursor pagination is only supported for single-source hits queries"
+        message: "cursor pagination is only supported for single-source hits queries",
       });
     }
 
@@ -92,7 +92,7 @@ export const filterInputSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["stats_field"],
-        message: "stats_field is required when mode is 'stats'"
+        message: "stats_field is required when mode is 'stats'",
       });
     }
 
@@ -100,7 +100,7 @@ export const filterInputSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["sort_by"],
-        message: "sort_by is required when mode is 'grouped_top_hits'"
+        message: "sort_by is required when mode is 'grouped_top_hits'",
       });
     }
   });
@@ -113,7 +113,7 @@ export async function executeFilter(
   kibanaClient: Pick<KibanaClient, "executeMany">,
   options?: {
     schemaCatalog?: SchemaCatalog;
-  }
+  },
 ): Promise<z.infer<typeof filterOutputSchema>> {
   return executeQuery(
     {
@@ -131,15 +131,15 @@ export async function executeFilter(
       stats_field: input.stats_field,
       top_hits_size: input.top_hits_size,
       histogram_interval: input.histogram_interval,
-      group_by: input.group_by
+      group_by: input.group_by,
     },
     sourceCatalog,
     kibanaClient,
     {
       resolveFieldAliases: false,
       resolvePreferredExactFields: true,
-      schemaCatalog: options?.schemaCatalog
-    }
+      schemaCatalog: options?.schemaCatalog,
+    },
   );
 }
 
@@ -153,9 +153,7 @@ export function formatFilterResult(result: z.infer<typeof filterOutputSchema>): 
   }
 
   if (result.counts_by_source) {
-    return result.counts_by_source
-      .map((count) => `${count.source_id}: ${count.count}`)
-      .join("\n");
+    return result.counts_by_source.map((count) => `${count.source_id}: ${count.count}`).join("\n");
   }
 
   if (result.histograms) {
@@ -170,10 +168,10 @@ export function formatFilterResult(result: z.infer<typeof filterOutputSchema>): 
 }
 
 export function createFilterCallToolResult(
-  result: z.infer<typeof filterOutputSchema>
+  result: z.infer<typeof filterOutputSchema>,
 ): CallToolResult {
   return {
     content: [{ type: "text", text: formatFilterResult(result) }],
-    structuredContent: result
+    structuredContent: result,
   };
 }

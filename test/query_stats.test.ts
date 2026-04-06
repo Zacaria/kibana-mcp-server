@@ -11,11 +11,11 @@ const source: SourceDefinition = {
   timeField: "@timestamp",
   backend: {
     kind: "elasticsearch_search",
-    path: "/metrics/_search"
+    path: "/metrics/_search",
   },
   fieldHints: [],
   defaultTextFields: ["message"],
-  evidenceFields: ["request_id"]
+  evidenceFields: ["request_id"],
 };
 
 describe("query stats mode", () => {
@@ -26,25 +26,25 @@ describe("query stats mode", () => {
         start_time: "2026-04-02T12:00:00Z",
         end_time: "2026-04-02T12:05:00Z",
         mode: "stats",
-        stats_field: "total_duration_ms"
+        stats_field: "total_duration_ms",
       },
-      [source]
+      [source],
     );
 
     expect(plan.sourceQueries[0]?.request.body).toMatchObject({
       aggs: {
         stats_summary: {
           stats: {
-            field: "total_duration_ms"
-          }
+            field: "total_duration_ms",
+          },
         },
         stats_percentiles: {
           percentiles: {
             field: "total_duration_ms",
-            percents: [50, 95, 99]
-          }
-        }
-      }
+            percents: [50, 95, 99],
+          },
+        },
+      },
     });
   });
 
@@ -55,9 +55,9 @@ describe("query stats mode", () => {
         start_time: "2026-04-02T12:00:00Z",
         end_time: "2026-04-02T12:05:00Z",
         mode: "stats",
-        stats_field: "total_duration_ms"
+        stats_field: "total_duration_ms",
       },
-      [source]
+      [source],
     );
 
     const execution: KibanaSearchExecutionResult = {
@@ -69,17 +69,17 @@ describe("query stats mode", () => {
             min: 10,
             max: 40,
             avg: 20,
-            sum: 60
+            sum: 60,
           },
           stats_percentiles: {
             values: {
               "50.0": 20,
               "95.0": 39,
-              "99.0": 40
-            }
-          }
-        }
-      }
+              "99.0": 40,
+            },
+          },
+        },
+      },
     };
 
     const result = normalizeQueryResponse(plan, [execution]);
@@ -95,8 +95,8 @@ describe("query stats mode", () => {
         sum: 60,
         p50: 20,
         p95: 39,
-        p99: 40
-      }
+        p99: 40,
+      },
     });
   });
 });

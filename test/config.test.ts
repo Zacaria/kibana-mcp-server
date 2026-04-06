@@ -8,7 +8,7 @@ describe("parseAppConfig", () => {
       {
         KIBANA_BASE_URL: "https://kibana.example.com/",
         KIBANA_USERNAME: "elastic",
-        KIBANA_PASSWORD: "secret"
+        KIBANA_PASSWORD: "secret",
       },
       {
         sources: [
@@ -20,16 +20,16 @@ describe("parseAppConfig", () => {
             backend: {
               kind: "kibana_internal_search_es",
               path: "/internal/search/es",
-              index: "app-logs-*"
+              index: "app-logs-*",
             },
             schema: {
               kind: "kibana_data_views_fields",
               path: "/api/data_views/fields_for_wildcard",
-              index: "app-logs-*"
-            }
-          }
-        ]
-      }
+              index: "app-logs-*",
+            },
+          },
+        ],
+      },
     );
 
     expect(config.kibana.baseUrl).toBe("https://kibana.example.com");
@@ -43,7 +43,7 @@ describe("parseAppConfig", () => {
       {
         KIBANA_BASE_URL: "https://kibana.example.com",
         KIBANA_USERNAME: "elastic",
-        KIBANA_PASSWORD: "secret"
+        KIBANA_PASSWORD: "secret",
       },
       {
         sources: [
@@ -55,15 +55,15 @@ describe("parseAppConfig", () => {
             backend: {
               kind: "kibana_internal_search_es",
               path: "/internal/search/es",
-              index: "workflow-metrics-*"
+              index: "workflow-metrics-*",
             },
             schema: {
               kind: "kibana_data_views_fields",
-              index: "workflow-metrics-*"
-            }
-          }
-        ]
-      }
+              index: "workflow-metrics-*",
+            },
+          },
+        ],
+      },
     );
 
     expect(config.sources[0]?.schema?.kind).toBe("kibana_data_views_fields");
@@ -77,7 +77,7 @@ describe("parseAppConfig", () => {
         {
           KIBANA_BASE_URL: "https://kibana.example.com",
           KIBANA_USERNAME: "",
-          KIBANA_PASSWORD: "secret"
+          KIBANA_PASSWORD: "secret",
         },
         {
           sources: [
@@ -88,12 +88,12 @@ describe("parseAppConfig", () => {
               timeField: "@timestamp",
               backend: {
                 kind: "elasticsearch_search",
-                path: "/app-logs/_search"
-              }
-            }
-          ]
-        }
-      )
+                path: "/app-logs/_search",
+              },
+            },
+          ],
+        },
+      ),
     ).toThrow();
   });
 
@@ -101,8 +101,8 @@ describe("parseAppConfig", () => {
     expect(resolveSourceCatalogPath({})).toBe("config/sources.runtime.json");
     expect(
       resolveSourceCatalogPath({
-        KIBANA_SOURCE_CATALOG_PATH: "config/custom.json"
-      } as NodeJS.ProcessEnv)
+        KIBANA_SOURCE_CATALOG_PATH: "config/custom.json",
+      } as NodeJS.ProcessEnv),
     ).toBe("config/custom.json");
   });
 });

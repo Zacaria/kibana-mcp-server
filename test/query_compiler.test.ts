@@ -11,16 +11,16 @@ const source: SourceDefinition = {
   backend: {
     kind: "kibana_internal_search_es",
     path: "/internal/search/es",
-    index: "app-logs-*"
+    index: "app-logs-*",
   },
   fieldHints: [
     {
       name: "traceId",
-      aliases: ["trace_id"]
-    }
+      aliases: ["trace_id"],
+    },
   ],
   defaultTextFields: ["message"],
-  evidenceFields: ["traceId"]
+  evidenceFields: ["traceId"],
 };
 
 const sourceSchema: SourceFieldDescriptor[] = [
@@ -30,7 +30,7 @@ const sourceSchema: SourceFieldDescriptor[] = [
     searchable: true,
     aggregatable: false,
     subfields: ["event.keyword"],
-    preferred_exact_field: "event.keyword"
+    preferred_exact_field: "event.keyword",
   },
   {
     name: "event.keyword",
@@ -38,8 +38,8 @@ const sourceSchema: SourceFieldDescriptor[] = [
     searchable: true,
     aggregatable: true,
     multi_field_parent: "event",
-    subfields: []
-  }
+    subfields: [],
+  },
 ];
 
 describe("compileQueryPlan", () => {
@@ -53,9 +53,9 @@ describe("compileQueryPlan", () => {
         filters: [{ field: "trace_id", value: "trace-123" }],
         mode: "hits",
         sort_by: "trace_id",
-        limit: 25
+        limit: 25,
       },
-      [source]
+      [source],
     );
 
     expect(plan.mode).toBe("hits");
@@ -63,7 +63,7 @@ describe("compileQueryPlan", () => {
     expect(plan.sourceQueries[0]?.resolvedSortBy).toBe("traceId");
     expect(plan.sourceQueries[0]?.request.body).toMatchObject({
       size: 25,
-      sort: [{ traceId: { order: "desc" } }]
+      sort: [{ traceId: { order: "desc" } }],
     });
   });
 
@@ -75,9 +75,9 @@ describe("compileQueryPlan", () => {
         end_time: "2026-04-02T12:05:00Z",
         mode: "terms",
         group_by: "trace_id",
-        limit: 5
+        limit: 5,
       },
-      [source]
+      [source],
     );
 
     expect(plan.sourceQueries[0]?.request.body).toMatchObject({
@@ -85,10 +85,10 @@ describe("compileQueryPlan", () => {
         groups: {
           terms: {
             field: "traceId",
-            size: 5
-          }
-        }
-      }
+            size: 5,
+          },
+        },
+      },
     });
   });
 
@@ -100,12 +100,12 @@ describe("compileQueryPlan", () => {
         end_time: "2026-04-02T12:05:00Z",
         filters: [{ field: "trace_id", value: "trace-123" }],
         mode: "hits",
-        limit: 25
+        limit: 25,
       },
       [source],
       {
-        resolveFieldAliases: false
-      }
+        resolveFieldAliases: false,
+      },
     );
 
     expect(plan.sourceQueries[0]?.resolvedFilters[0]?.resolved_field).toBe("trace_id");
@@ -120,12 +120,12 @@ describe("compileQueryPlan", () => {
         end_time: "2026-04-02T12:05:00Z",
         filters: [{ field: "event", value: "CACHE_REFRESH_PHASES" }],
         mode: "hits",
-        limit: 25
+        limit: 25,
       },
       [source],
       {
-        sourceSchemas: new Map([["app-logs", sourceSchema]])
-      }
+        sourceSchemas: new Map([["app-logs", sourceSchema]]),
+      },
     );
 
     expect(plan.sourceQueries[0]?.resolvedFilters[0]?.resolved_field).toBe("event.keyword");
@@ -141,12 +141,12 @@ describe("compileQueryPlan", () => {
         end_time: "2026-04-02T12:05:00Z",
         filters: [{ field: "event", value: "CACHE_REFRESH_PHASES" }],
         mode: "hits",
-        limit: 25
+        limit: 25,
       },
       [source],
       {
-        sourceSchemaErrors: new Map([["app-logs", "schema backend returned 404 Not Found"]])
-      }
+        sourceSchemaErrors: new Map([["app-logs", "schema backend returned 404 Not Found"]]),
+      },
     );
 
     expect(plan.sourceQueries[0]?.resolvedFilters[0]?.resolved_field).toBe("event");
@@ -159,9 +159,9 @@ describe("compileQueryPlan", () => {
         source_id: "app-logs",
         sort: "desc",
         sort_by: "traceId",
-        values: ["trace-123"]
+        values: ["trace-123"],
       }),
-      "utf8"
+      "utf8",
     ).toString("base64url");
 
     const plan = compileQueryPlan(
@@ -171,13 +171,13 @@ describe("compileQueryPlan", () => {
         end_time: "2026-04-02T12:05:00Z",
         mode: "hits",
         cursor,
-        limit: 25
+        limit: 25,
       },
-      [source]
+      [source],
     );
 
     expect(plan.sourceQueries[0]?.request.body).toMatchObject({
-      search_after: ["trace-123"]
+      search_after: ["trace-123"],
     });
   });
 });

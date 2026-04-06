@@ -4,7 +4,7 @@ import type {
   NormalizedHit,
   QueryPlan,
   QueryStructuredResponse,
-  TermsBucket
+  TermsBucket,
 } from "../types.js";
 import { encodeQueryCursor } from "./cursor.js";
 
@@ -32,10 +32,7 @@ function extractTotal(rawResponse: Record<string, unknown>): number {
   return 0;
 }
 
-function extractSummary(
-  rawDocument: Record<string, unknown>,
-  defaultTextFields: string[]
-): string {
+function extractSummary(rawDocument: Record<string, unknown>, defaultTextFields: string[]): string {
   for (const field of [...defaultTextFields, "message", "log", "event.original"]) {
     const candidate = rawDocument[field];
     if (typeof candidate === "string" && candidate.trim() !== "") {
@@ -48,7 +45,7 @@ function extractSummary(
 
 function extractSelectedFields(
   rawDocument: Record<string, unknown>,
-  evidenceFields: string[]
+  evidenceFields: string[],
 ): Record<string, unknown> {
   return evidenceFields.reduce<Record<string, unknown>>((selected, fieldName) => {
     if (fieldName in rawDocument) {
@@ -72,22 +69,23 @@ function extractNestedMatches(hitRecord: Record<string, unknown>) {
 
       return {
         path,
-        documents
+        documents,
       };
     })
     .filter(
       (
-        nestedMatch
+        nestedMatch,
       ): nestedMatch is {
         path: string;
         documents: Record<string, unknown>[];
-      } => nestedMatch !== null
+      } => nestedMatch !== null,
     );
 }
 
-function normalizeHits(
-  result: KibanaSearchExecutionResult
-): { total: number; hits: NormalizedHit[] } {
+function normalizeHits(result: KibanaSearchExecutionResult): {
+  total: number;
+  hits: NormalizedHit[];
+} {
   const rawResponse = result.rawResponse;
   const hitsEnvelope = asRecord(rawResponse.hits);
   const rawHits = asArray(hitsEnvelope.hits);
@@ -95,13 +93,13 @@ function normalizeHits(
 
   return {
     total: extractTotal(rawResponse),
-    hits: normalizedHits
+    hits: normalizedHits,
   };
 }
 
 function normalizeRawHit(
   result: KibanaSearchExecutionResult,
-  hitRecord: Record<string, unknown>
+  hitRecord: Record<string, unknown>,
 ): NormalizedHit {
   const rawDocument = asRecord(hitRecord._source);
   const nestedMatches = extractNestedMatches(hitRecord);
@@ -118,10 +116,10 @@ function normalizeRawHit(
     selected_fields: extractSelectedFields(rawDocument, result.source.evidenceFields),
     ...(nestedMatches.length > 0
       ? {
-          nested_matches: nestedMatches
+          nested_matches: nestedMatches,
         }
       : {}),
-    raw_document: rawDocument
+    raw_document: rawDocument,
   };
 }
 
@@ -129,9 +127,14 @@ function buildNextCursor(
   plan: QueryPlan,
   executions: KibanaSearchExecutionResult[],
   hitsCount: number,
-  totalCount: number
+  totalCount: number,
 ): string | undefined {
-  if (plan.mode !== "hits" || plan.sourceQueries.length !== 1 || hitsCount === 0 || totalCount <= hitsCount) {
+  if (
+    plan.mode !== "hits" ||
+    plan.sourceQueries.length !== 1 ||
+    hitsCount === 0 ||
+    totalCount <= hitsCount
+  ) {
     return undefined;
   }
 
@@ -148,7 +151,7 @@ function buildNextCursor(
     source_id: execution.source.id,
     sort: plan.sort,
     sort_by: plan.sourceQueries[0]?.resolvedSortBy ?? plan.sortBy ?? execution.source.timeField,
-    values: sortValues
+    values: sortValues,
   });
 }
 
@@ -174,7 +177,7 @@ function compareSortValues(left: unknown, right: unknown, direction: QueryPlan["
   } else {
     comparison = String(left).localeCompare(String(right), undefined, {
       numeric: true,
-      sensitivity: "base"
+      sensitivity: "base",
     });
   }
 
@@ -183,7 +186,7 @@ function compareSortValues(left: unknown, right: unknown, direction: QueryPlan["
 
 function sortHitsGlobally(plan: QueryPlan, hits: NormalizedHit[]): NormalizedHit[] {
   const resolvedSortByBySource = new Map(
-    plan.sourceQueries.map((sourceQuery) => [sourceQuery.source.id, sourceQuery.resolvedSortBy])
+    plan.sourceQueries.map((sourceQuery) => [sourceQuery.source.id, sourceQuery.resolvedSortBy]),
   );
 
   return [...hits].sort((left, right) => {
@@ -217,7 +220,7 @@ function normalizeHistogram(result: KibanaSearchExecutionResult): HistogramBucke
           : "",
       key_as_string:
         typeof bucketRecord.key_as_string === "string" ? bucketRecord.key_as_string : undefined,
-      count: typeof bucketRecord.doc_count === "number" ? bucketRecord.doc_count : 0
+      count: typeof bucketRecord.doc_count === "number" ? bucketRecord.doc_count : 0,
     };
   });
 }
@@ -232,12 +235,15 @@ function normalizeTerms(result: KibanaSearchExecutionResult): TermsBucket[] {
     const bucketRecord = asRecord(bucket);
     return {
       key: String(bucketRecord.key ?? ""),
-      count: typeof bucketRecord.doc_count === "number" ? bucketRecord.doc_count : 0
+      count: typeof bucketRecord.doc_count === "number" ? bucketRecord.doc_count : 0,
     };
   });
 }
 
-function normalizeStatsSummary(statsRecord: Record<string, unknown>, percentilesRecord: Record<string, unknown>) {
+function normalizeStatsSummary(
+  statsRecord: Record<string, unknown>,
+  percentilesRecord: Record<string, unknown>,
+) {
   const percentileValues = asRecord(percentilesRecord.values);
 
   return {
@@ -248,32 +254,31 @@ function normalizeStatsSummary(statsRecord: Record<string, unknown>, percentiles
     sum: typeof statsRecord.sum === "number" ? statsRecord.sum : 0,
     p50: typeof percentileValues["50.0"] === "number" ? (percentileValues["50.0"] as number) : null,
     p95: typeof percentileValues["95.0"] === "number" ? (percentileValues["95.0"] as number) : null,
-    p99: typeof percentileValues["99.0"] === "number" ? (percentileValues["99.0"] as number) : null
+    p99: typeof percentileValues["99.0"] === "number" ? (percentileValues["99.0"] as number) : null,
   };
 }
 
 function normalizeStats(
   plan: QueryPlan,
-  result: KibanaSearchExecutionResult
+  result: KibanaSearchExecutionResult,
 ): NonNullable<QueryStructuredResponse["stats"]>[number] {
-  const aggregations =
-    asRecord(rawResponseWithAggs(result).aggs).stats_summary
-      ? asRecord(rawResponseWithAggs(result).aggs)
-      : asRecord(rawResponseWithAggs(result).aggregations);
+  const aggregations = asRecord(rawResponseWithAggs(result).aggs).stats_summary
+    ? asRecord(rawResponseWithAggs(result).aggs)
+    : asRecord(rawResponseWithAggs(result).aggregations);
 
   return {
     source_id: result.source.id,
     field: plan.statsField ?? "",
     summary: normalizeStatsSummary(
       asRecord(aggregations.stats_summary),
-      asRecord(aggregations.stats_percentiles)
-    )
+      asRecord(aggregations.stats_percentiles),
+    ),
   };
 }
 
 function normalizeGroupedTopHits(
   plan: QueryPlan,
-  result: KibanaSearchExecutionResult
+  result: KibanaSearchExecutionResult,
 ): NonNullable<QueryStructuredResponse["grouped_hits"]>[number] {
   const groups =
     asRecord(asRecord(rawResponseWithAggs(result)).aggs).groups ??
@@ -290,9 +295,9 @@ function normalizeGroupedTopHits(
       return {
         key: String(bucketRecord.key ?? ""),
         count: typeof bucketRecord.doc_count === "number" ? bucketRecord.doc_count : 0,
-        hits: topHits.map((hit) => normalizeRawHit(result, asRecord(hit)))
+        hits: topHits.map((hit) => normalizeRawHit(result, asRecord(hit))),
       };
-    })
+    }),
   };
 }
 
@@ -302,7 +307,7 @@ function rawResponseWithAggs(result: KibanaSearchExecutionResult): Record<string
 
 export function normalizeQueryResponse(
   plan: QueryPlan,
-  executions: KibanaSearchExecutionResult[]
+  executions: KibanaSearchExecutionResult[],
 ): QueryStructuredResponse {
   const resolvedFilters = plan.sourceQueries.flatMap((sourceQuery) => sourceQuery.resolvedFilters);
   const advisories = plan.sourceQueries.flatMap((sourceQuery) => sourceQuery.advisories);
@@ -315,7 +320,7 @@ export function normalizeQueryResponse(
       plan,
       executions,
       hits.length,
-      normalized.reduce((sum, entry) => sum + entry.total, 0)
+      normalized.reduce((sum, entry) => sum + entry.total, 0),
     );
     return {
       query_echo: {
@@ -333,22 +338,22 @@ export function normalizeQueryResponse(
         sort_by: plan.sortBy,
         resolved_sort_by_by_source: plan.sourceQueries.map((sourceQuery) => ({
           source_id: sourceQuery.source.id,
-          resolved_sort_by: sourceQuery.resolvedSortBy
+          resolved_sort_by: sourceQuery.resolvedSortBy,
         })),
         ...(advisories.length > 0 ? { advisories } : {}),
         limit: plan.limit,
-        truncated: allHits.length > plan.limit
+        truncated: allHits.length > plan.limit,
       },
       total: normalized.reduce((sum, entry) => sum + entry.total, 0),
       ...(nextCursor ? { next_cursor: nextCursor } : {}),
-      hits
+      hits,
     };
   }
 
   if (plan.mode === "count") {
     const countsBySource = executions.map((execution) => ({
       source_id: execution.source.id,
-      count: extractTotal(execution.rawResponse)
+      count: extractTotal(execution.rawResponse),
     }));
     return {
       query_echo: {
@@ -366,17 +371,17 @@ export function normalizeQueryResponse(
         sort_by: plan.sortBy,
         ...(advisories.length > 0 ? { advisories } : {}),
         limit: plan.limit,
-        truncated: false
+        truncated: false,
       },
       total: countsBySource.reduce((sum, entry) => sum + entry.count, 0),
-      counts_by_source: countsBySource
+      counts_by_source: countsBySource,
     };
   }
 
   if (plan.mode === "histogram") {
     const histograms = executions.map((execution) => ({
       source_id: execution.source.id,
-      buckets: normalizeHistogram(execution)
+      buckets: normalizeHistogram(execution),
     }));
     return {
       query_echo: {
@@ -395,14 +400,14 @@ export function normalizeQueryResponse(
         ...(advisories.length > 0 ? { advisories } : {}),
         limit: plan.limit,
         histogram_interval: plan.histogramInterval,
-        truncated: false
+        truncated: false,
       },
       total: histograms.reduce(
         (sum, histogram) =>
           sum + histogram.buckets.reduce((bucketSum, bucket) => bucketSum + bucket.count, 0),
-        0
+        0,
       ),
-      histograms
+      histograms,
     };
   }
 
@@ -427,10 +432,10 @@ export function normalizeQueryResponse(
         limit: plan.limit,
         stats_field: plan.statsField,
         group_by: plan.groupBy,
-        truncated: false
+        truncated: false,
       },
       total: stats.reduce((sum, entry) => sum + entry.summary.count, 0),
-      stats
+      stats,
     };
   }
 
@@ -455,20 +460,21 @@ export function normalizeQueryResponse(
         limit: plan.limit,
         top_hits_size: plan.topHitsSize,
         group_by: plan.groupBy,
-        truncated: false
+        truncated: false,
       },
       total: groupedHits.reduce(
-        (sum, entry) => sum + entry.buckets.reduce((bucketSum, bucket) => bucketSum + bucket.count, 0),
-        0
+        (sum, entry) =>
+          sum + entry.buckets.reduce((bucketSum, bucket) => bucketSum + bucket.count, 0),
+        0,
       ),
-      grouped_hits: groupedHits
+      grouped_hits: groupedHits,
     };
   }
 
   const groups = executions.map((execution) => ({
     source_id: execution.source.id,
     field: plan.groupBy ?? "",
-    buckets: normalizeTerms(execution)
+    buckets: normalizeTerms(execution),
   }));
 
   return {
@@ -488,12 +494,13 @@ export function normalizeQueryResponse(
       ...(advisories.length > 0 ? { advisories } : {}),
       limit: plan.limit,
       group_by: plan.groupBy,
-      truncated: false
+      truncated: false,
     },
     total: groups.reduce(
-      (sum, group) => sum + group.buckets.reduce((bucketSum, bucket) => bucketSum + bucket.count, 0),
-      0
+      (sum, group) =>
+        sum + group.buckets.reduce((bucketSum, bucket) => bucketSum + bucket.count, 0),
+      0,
     ),
-    groups
+    groups,
   };
 }
