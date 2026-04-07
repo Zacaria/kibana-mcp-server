@@ -62,6 +62,7 @@ npm run build
 
 4. Open the cloned repo in Codex.
 5. Open the plugin directory in Codex and install `Kibana Log Investigation` from the repo marketplace.
+   - if the current model cannot complete that install itself, do the Codex UI click manually and let the agent continue with configuration afterward
 6. Restart Codex if the new MCP server does not appear immediately.
 7. Configure the server with Kibana credentials and sources:
    - either call the MCP `configure` tool
@@ -103,8 +104,47 @@ Environment variables:
 - `KIBANA_TIMEOUT_MS` optional, default `10000`
 - `KIBANA_SOURCE_CATALOG_PATH` optional, default `config/sources.runtime.json`
 
+`KIBANA_BASE_URL` is the Kibana base prefix that the server joins with each configured backend or schema path.
+
+Use:
+
+- `https://kibana.example.com`
+- `https://gateway.example.com/logs` when Kibana is reverse-proxied under `/logs`
+
+Do not use:
+
+- `https://kibana.example.com/internal/search/es`
+- `https://gateway.example.com/logs/internal/search/es`
+
+The source definition already carries endpoint paths such as `/internal/search/es`, so including a full API path in `KIBANA_BASE_URL` usually produces a bad combined URL and a `404`.
+
 Start from `config/sources.example.json` and copy it to `config/sources.json`.
 If no explicit `KIBANA_SOURCE_CATALOG_PATH` is set, startup will try `config/sources.runtime.json` first and then fall back to `config/sources.json`.
+
+### Multiple environments
+
+If you need staging and production at the same time, create two MCP server entries that both run this repo but use different environment variables.
+
+Keep these distinct per environment:
+
+- server name, for example `kibana-staging` and `kibana-prod`
+- `KIBANA_BASE_URL`
+- credentials
+- `KIBANA_SOURCE_CATALOG_PATH`, for example `config/sources.staging.json` and `config/sources.prod.json`
+
+If your workstation or secret store already uses target-specific variable names, that is also fine, for example:
+
+- `KIBANA_BASE_URL_STAGING`, `KIBANA_USERNAME_STAGING`, `KIBANA_PASSWORD_STAGING`
+- `KIBANA_BASE_URL_PROD`, `KIBANA_USERNAME_PROD`, `KIBANA_PASSWORD_PROD`
+
+For each MCP server entry, map those target-specific values into the standard runtime variables expected by the server:
+
+- `KIBANA_BASE_URL`
+- `KIBANA_USERNAME`
+- `KIBANA_PASSWORD`
+- `KIBANA_SOURCE_CATALOG_PATH`
+
+Using separate source-catalog paths matters because the `configure` tool persists sources to disk, and one shared runtime file would cause the environments to overwrite each other.
 
 Each source definition should provide:
 

@@ -19,6 +19,7 @@ This MCP is designed for operators and AI agents that need read-only access to K
 
 ## Best-Effort Support
 
+- Fully autonomous repo-local plugin installation by prompting alone across all Codex model variants
 - Schema metadata endpoints (`kibana_data_views_fields`, `kibana_index_patterns_fields`, `elasticsearch_field_caps`)
 - Nested query features that depend on schema availability
 - Public package installs (once enabled)
@@ -27,7 +28,10 @@ Best-effort means we will investigate issues but cannot guarantee behavior acros
 
 ## Known Environment Constraints
 
+- Some Codex model variants are less reliable at completing repo-local plugin installation without a manual Codex UI step. The supported fallback is to install the plugin manually from the local marketplace, then continue with MCP configuration.
 - Some Kibana deployments proxy or block schema metadata endpoints. In those cases, schema-aware features may be unavailable.
+- `KIBANA_BASE_URL` must be the Kibana base prefix, not a full search endpoint such as `/internal/search/es`.
+- If you run staging and production side by side, give each MCP server entry its own `KIBANA_SOURCE_CATALOG_PATH` so runtime-persisted sources do not overwrite each other.
 - Credentials must remain in environment variables. The server does not persist secrets to disk.
 
 ## Security Reporting

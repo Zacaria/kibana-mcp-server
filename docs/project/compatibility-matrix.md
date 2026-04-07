@@ -12,6 +12,7 @@ This matrix distinguishes guaranteed support from best-effort behavior. Each cla
 | --- | --- | --- | --- |
 | Node.js 22+ runtime | Guaranteed | Verified in CI via `.node-version` | Required for build and runtime. |
 | Repo-local Codex plugin install | Guaranteed | Verified via `npm run verify` and entrypoint checks | Requires `npm install` + `npm run build`. |
+| Fully autonomous plugin install by prompting alone across Codex model variants | Best-effort | Field reports show model-dependent behavior | Manual install from the local marketplace is the supported fallback when the agent cannot complete the UI step itself. |
 | `kibana_internal_search_es` backend | Guaranteed | Verified in tests | Primary search transport. |
 | `elasticsearch_search` backend | Guaranteed | Verified in tests | Direct Elasticsearch-compatible search path. |
 | Schema metadata endpoints | Best-effort | Known 404s in some deployments | `describe_fields` may fail if endpoints are blocked. |
